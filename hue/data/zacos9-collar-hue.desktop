@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Hue Lights for The Collar
+Comment=Philips Hue rooms and zones as Collar modules
+Exec=zacos9-collar-hue
+NoDisplay=true
+OnlyShowIn=ZacOS9;
+X-GNOME-Autostart-enabled=true
