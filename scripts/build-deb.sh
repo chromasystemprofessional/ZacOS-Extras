@@ -67,8 +67,10 @@ if [ -n "${programs:-}" ]; then
 	{
 		printf '#!/bin/sh\nset -e\n'
 		printf 'if [ "$1" = remove ]; then\n'
+		# By command line: `pkill -x NAME` sees only a name's first 15 characters,
+		# so it never matches zacos9-collar-hue.
 		for p in $programs; do
-			printf '\tpkill -x %s || true\n' "$p"
+			printf '\tpkill -x -f "(/usr/bin/)?%s" || true\n' "$p"
 		done
 		printf 'fi\n'
 	} >"$stage/DEBIAN/prerm"
