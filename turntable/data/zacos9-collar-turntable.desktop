@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Turntable for The Collar
+Comment=Plays a USB turntable through the sound output
+Exec=zacos9-collar-turntable
+NoDisplay=true
+OnlyShowIn=ZacOS9;
+X-GNOME-Autostart-enabled=true

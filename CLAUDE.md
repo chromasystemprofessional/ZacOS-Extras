@@ -13,6 +13,10 @@ has its own CLAUDE.md; read it before touching anything there).
 | └ Modules, menus, bulb icon | `hue/src/huemodules.*` | |
 | └ xy / mired / sRGB conversions, colour presets | `hue/src/huecolor.*` | |
 | Hue tests (fake bridge over HTTP + private session bus) | `hue/tests/` | Python (dbus-python) |
+| USB turntable for The Collar (`zacos9-collar-turntable`) | `turntable/src/` | C++ / Qt6 |
+| └ Sound server through `pactl`: USB inputs, loopbacks, output, `subscribe` | `turntable/src/turntableaudio.*` | |
+| └ Module, menu, record icon, playing again when the turntable appears | `turntable/src/turntablemodule.*` | |
+| Turntable tests (stand-in `pactl` + private session bus) | `turntable/tests/` | Python (dbus-python) |
 | Build and install helpers | `scripts/` | sh |
 
 ## Rules

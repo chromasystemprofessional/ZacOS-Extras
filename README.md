@@ -7,6 +7,7 @@ its public interfaces (D-Bus, settings files, XDG autostart).
 | Extra | What | Docs |
 |---|---|---|
 | `hue/` | **Hue lights in The Collar**: the Philips Hue rooms and zones you choose as Collar modules (on/off, brightness, scenes) | [hue/README.md](hue/README.md) |
+| `turntable/` | **A turntable in The Collar**: plays a USB turntable through the sound output, switched on and off from a Collar module | [turntable/README.md](turntable/README.md) |
 | `common/` | `CollarExtensionService`, for any extra that adds Collar modules | [common/collarextension.h](common/collarextension.h) |
 
 ## Installing

@@ -10,8 +10,13 @@ hue)
 	desktop=hue/data/zacos9-collar-hue.desktop
 	built=build/hue/$program
 	;;
+turntable)
+	program=zacos9-collar-turntable
+	desktop=turntable/data/zacos9-collar-turntable.desktop
+	built=build/turntable/$program
+	;;
 *)
-	echo "usage: $0 hue" >&2
+	echo "usage: $0 hue|turntable" >&2
 	exit 2
 	;;
 esac
