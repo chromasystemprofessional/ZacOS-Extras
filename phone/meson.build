@@ -9,3 +9,5 @@ install_data('data/zacos9-extra-phone.desktop',
   install_dir: get_option('sysconfdir') / 'xdg' / 'autostart',
   install_tag: 'phone',
 )
+
+test('phone', find_program('true'))
