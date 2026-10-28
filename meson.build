@@ -18,3 +18,4 @@ collarextension_dep = declare_dependency(
 
 subdir('hue')
 subdir('turntable')
+subdir('phone')

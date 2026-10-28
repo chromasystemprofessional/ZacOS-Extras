@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Phone for ZacOS
+Comment=KDE Connect and Syncthing for your phone
+Exec=zacos9-extra-phone
+NoDisplay=true
+OnlyShowIn=ZacOS9;
+X-GNOME-Autostart-enabled=true
