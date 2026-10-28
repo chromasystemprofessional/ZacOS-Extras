@@ -1,0 +1,284 @@
+#include "gameplayer.h"
+
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QProcessEnvironment>
+#include <QStandardPaths>
+
+#include <algorithm>
+
+using namespace gameplayer;
+
+namespace {
+
+static QByteArray header(const QString &path, qint64 offset, int length) {
+	QFile f(path);
+	if (!f.open(QIODevice::ReadOnly) || !f.seek(offset)) {
+		return QByteArray();
+	}
+	return f.read(length);
+}
+
+static bool siblingCue(const QFileInfo &info) {
+	const QString cue = info.completeBaseName() + ".cue";
+	const QStringList names = info.absoluteDir().entryList(QDir::Files, QDir::Name);
+	for (const QString &n : names) {
+		if (n.compare(cue, Qt::CaseInsensitive) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static QString siblingCuePath(const QFileInfo &info) {
+	const QString stem = info.completeBaseName();
+	const QStringList names = info.absoluteDir().entryList(QDir::Files, QDir::Name);
+	for (const QString &n : names) {
+		if (n.compare(stem + ".cue", Qt::CaseInsensitive) == 0) {
+			return info.absolutePath() + "/" + n;
+		}
+	}
+	return QString();
+}
+
+static bool executableOnPath(const QString &program) {
+	if (program.contains('/')) {
+		return QFileInfo(program).isExecutable();
+	}
+	for (const QString &dir : qEnvironmentVariable("PATH").split(':', Qt::SkipEmptyParts)) {
+		if (QFileInfo(dir + "/" + program).isExecutable()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+static QStringList libretroDirs(const QString &override) {
+	QStringList dirs;
+	if (!override.isEmpty()) {
+		for (const QString &d : override.split(':', Qt::SkipEmptyParts)) {
+			if (QFileInfo(d).isDir()) {
+				dirs << d;
+			}
+		}
+	}
+	for (const QString &lib : { QStringLiteral("/usr/lib"), QStringLiteral("/usr/local/lib") }) {
+		QDir d(lib);
+		for (const QString &e : d.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+			const QString p = lib + "/" + e + "/libretro";
+			if (QFileInfo(p).isDir()) {
+				dirs << p;
+			}
+		}
+	}
+	return dirs;
+}
+
+static QString findCore(const QString &name, const QString &override) {
+	for (const QString &dir : libretroDirs(override)) {
+		const QString p = dir + "/" + name;
+		if (QFileInfo(p).isFile()) {
+			return p;
+		}
+	}
+	return name; /* let RetroArch find it by name */
+}
+
+static const char *coreName(System s) {
+	switch (s) {
+	case System::Nes: return "nestopia_libretro.so";
+	case System::Snes: return "snes9x_libretro.so";
+	case System::Sega: return "genesis_plus_gx_libretro.so";
+	case System::GameBoy: return "gambatte_libretro.so";
+	case System::Gba: return "mgba_libretro.so";
+	default: return nullptr;
+	}
+}
+
+static QString mupenCorelib() {
+	const QByteArray v = qgetenv("ZACOS9_MUPEN_CORELIB");
+	if (!v.isEmpty()) {
+		return QString::fromLocal8Bit(v);
+	}
+	for (const QString &lib : { QStringLiteral("/usr/lib"), QStringLiteral("/usr/local/lib") }) {
+		QDir d(lib);
+		for (const QString &e : d.entryList(QDir::Dirs | QDir::NoDotAndDotDot)) {
+			const QStringList files = QDir(lib + "/" + e).entryList(
+				QStringList() << "libmupen64plus.so*", QDir::Files);
+			for (const QString &f : files) {
+				if (f.startsWith("libmupen64plus.so")) {
+					return lib + "/" + e + "/" + f;
+				}
+			}
+		}
+	}
+	return "libmupen64plus.so.2";
+}
+
+static QString mupenDatadir() {
+	const QByteArray v = qgetenv("ZACOS9_MUPEN_DATADIR");
+	return v.isEmpty() ? QString("/usr/share/mupen64plus") : QString::fromLocal8Bit(v);
+}
+
+} // namespace
+
+System gameplayer::detectSystem(const QString &path) {
+	const QFileInfo info(path);
+	if (!info.isFile()) {
+		return System::None;
+	}
+	const QString suffix = info.suffix().toLower();
+	if (suffix == "nes") {
+		return header(path, 0, 4) == QByteArray("NES\x1A", 4) ? System::Nes : System::None;
+	}
+	if (suffix == "sfc" || suffix == "smc") {
+		return System::Snes;
+	}
+	if (suffix == "n64" || suffix == "z64" || suffix == "v64") {
+		return System::N64;
+	}
+	if (suffix == "gen" || suffix == "smd" || suffix == "sms") {
+		return System::Sega;
+	}
+	if (suffix == "md") {
+		if (info.size() < 128 * 1024) {
+			return System::None;
+		}
+		return header(path, 0x100, 4) == QByteArray("SEGA", 4) ? System::Sega : System::None;
+	}
+	if (suffix == "gb" || suffix == "gbc") {
+		return System::GameBoy;
+	}
+	if (suffix == "gba") {
+		return System::Gba;
+	}
+	if (suffix == "cue") {
+		return System::Ps1;
+	}
+	if (suffix == "bin") {
+		return siblingCue(info) ? System::Ps1 : System::None;
+	}
+	return System::None;
+}
+
+QString gameplayer::launchFile(System system, const QString &path) {
+	if (system != System::Ps1) {
+		return path;
+	}
+	const QFileInfo info(path);
+	if (info.suffix().compare("cue", Qt::CaseInsensitive) == 0) {
+		return path;
+	}
+	const QString cue = siblingCuePath(info);
+	return cue.isEmpty() ? path : cue;
+}
+
+QString gameplayer::systemName(System system) {
+	switch (system) {
+	case System::Nes: return "NES";
+	case System::Snes: return "Super NES";
+	case System::Ps1: return "PlayStation";
+	case System::N64: return "Nintendo 64";
+	case System::Sega: return "Sega";
+	case System::GameBoy: return "Game Boy";
+	case System::Gba: return "Game Boy Advance";
+	case System::None: return "unknown";
+	}
+	return "unknown";
+}
+
+Launch gameplayer::buildLaunch(System system, const QString &file, const QString &configDir,
+		QString *error) {
+	Launch l;
+	const QString coreOverride = qgetenv("ZACOS9_GAMEPLAYER_CORES");
+	switch (system) {
+	case System::Nes:
+	case System::Snes:
+	case System::Sega:
+	case System::GameBoy:
+	case System::Gba: {
+		const char *core = coreName(system);
+		if (!core) {
+			if (error) {
+				*error = "Game Player doesn't have an engine for this system.";
+			}
+			return l;
+		}
+		l.program = "retroarch";
+		l.args << "--config" << (configDir + "/retroarch.cfg")
+			<< "-L" << findCore(QString::fromLatin1(core), coreOverride)
+			<< file;
+		break;
+	}
+	case System::Ps1: {
+		l.program = "mednafen";
+		l.args << launchFile(System::Ps1, file);
+		l.env << ("MEDNAFEN_HOME=" + configDir + "/mednafen");
+		l.env << "SDL_VIDEODRIVER=x11";
+		break;
+	}
+	case System::N64: {
+		l.program = "mupen64plus";
+		l.args << "--corelib" << mupenCorelib()
+			<< "--configdir" << (configDir + "/mupen64plus")
+			<< "--datadir" << mupenDatadir()
+			<< "--gfx" << "mupen64plus-video-glide64mk2"
+			<< "--audio" << "mupen64plus-audio-sdl"
+			<< "--input" << "mupen64plus-input-sdl"
+			<< "--rsp" << "mupen64plus-rsp-hle"
+			<< file;
+		l.env << "SDL_VIDEODRIVER=x11";
+		break;
+	}
+	case System::None:
+		if (error) {
+			*error = "That file isn't a game Game Player knows how to play.";
+		}
+		return l;
+	}
+	if (!executableOnPath(l.program)) {
+		if (error) {
+			*error = QString("Game Player needs %1, but it isn't installed.").arg(l.program);
+		}
+		l.program.clear();
+		l.args.clear();
+		l.env.clear();
+		return l;
+	}
+	return l;
+}
+
+bool gameplayer::ensureConfigs(const QString &configDir) {
+	QDir().mkpath(configDir);
+	QDir().mkpath(configDir + "/mednafen/firmware");
+	QDir().mkpath(configDir + "/mupen64plus");
+	const QString saveDir = QDir::homePath() + "/Games/Saved Games";
+	QDir().mkpath(saveDir);
+	QFile rc(configDir + "/retroarch.cfg");
+	if (!rc.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+		return false;
+	}
+	rc.write(retroarchConfig(saveDir).toUtf8());
+	rc.close();
+	const QString med = configDir + "/mednafen/mednafen.cfg";
+	if (!QFileInfo(med).exists()) {
+		QFile f(med);
+		if (f.open(QIODevice::WriteOnly)) {
+			f.write("; Game Player: windowed. BIOS files (scph5501.bin and the like)\n"
+				"; belong in the firmware folder beside this file.\nvideo.fs 0\n");
+			f.close();
+		}
+	}
+	return true;
+}
+
+QString gameplayer::retroarchConfig(const QString &saveDir) {
+	return QStringLiteral(
+		"config_save_on_exit = \"false\"\n"
+		"savestate_auto_save = \"true\"\n"
+		"savestate_auto_load = \"true\"\n"
+		"savestate_directory = \"%1\"\n"
+		"savefile_directory = \"%1\"\n"
+		"video_fullscreen = \"false\"\n").arg(saveDir);
+}

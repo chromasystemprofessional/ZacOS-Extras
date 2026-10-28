@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Game Player
+Comment=Play console games (cartridges and discs)
+Exec=zacos9-gameplayer --play %f
+Terminal=false
+MimeType=application/x-nes-rom;application/vnd.nintendo.snes.rom;application/x-cue;application/x-n64-rom;application/x-genesis-rom;application/x-sms-rom;application/x-gameboy-rom;application/x-gameboy-color-rom;application/x-gba-rom;
+Categories=Game;
+OnlyShowIn=ZacOS9;
+X-GNOME-Autostart-enabled=false

@@ -4,7 +4,7 @@ project('zacos9-extras', 'cpp',
   meson_version: '>=1.0',
 )
 
-qt6 = dependency('qt6', modules: ['Core', 'Gui', 'Network', 'DBus'])
+qt6 = dependency('qt6', modules: ['Core', 'Gui', 'Network', 'DBus', 'Widgets'])
 
 # Shared by every extra that adds modules to The Collar.
 collarextension = static_library('collarextension', 'common/collarextension.cpp',
@@ -20,3 +20,4 @@ subdir('hue')
 subdir('turntable')
 subdir('phone')
 subdir('nightmode')
+subdir('gameplayer')

@@ -8,6 +8,9 @@ its public interfaces (D-Bus, settings files, XDG autostart).
 |---|---|---|
 | `hue/` | **Hue lights in The Collar**: the Philips Hue rooms and zones you choose as Collar modules (on/off, brightness, scenes) | [hue/README.md](hue/README.md) |
 | `turntable/` | **A turntable in The Collar**: plays a USB turntable through the sound output, switched on and off from a Collar module | [turntable/README.md](turntable/README.md) |
+| `phone/` | **Phone**: KDE Connect and Syncthing for your phone: notifications, file sharing, clipboard and photo sync | [phone/README.md](phone/README.md) |
+| `nightmode/` | **Night Mode**: warmer screen colour for the evening, switched on and off from The Collar | [nightmode/README.md](nightmode/README.md) |
+| `gameplayer/` | **Game Player**: plays NES, Super NES, Sega, Game Boy, Game Boy Advance, PlayStation and Nintendo 64 cartridges and discs; double-click a game file, or launch from the Collar module while one runs | [gameplayer/README.md](gameplayer/README.md) |
 | `common/` | `CollarExtensionService`, for any extra that adds Collar modules | [common/collarextension.h](common/collarextension.h) |
 
 ## Installing

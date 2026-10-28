@@ -15,6 +15,19 @@ turntable)
 	desktop=turntable/data/zacos9-collar-turntable.desktop
 	built=build/turntable/$program
 	;;
+gameplayer)
+	program=zacos9-gameplayer
+	desktop=gameplayer/data/zacos9-gameplayer.desktop
+	built=build/gameplayer/$program
+	scripts/build.sh >/dev/null
+	bin="$HOME/.local/bin"
+	install -Dm755 "$built" "$bin/$program"
+	mkdir -p "$HOME/.local/share/applications"
+	install -Dm644 "$desktop" "$HOME/.local/share/applications/$(basename "$desktop")"
+	echo "Installed $program to $bin and its desktop entry to ~/.local/share/applications."
+	echo "Double-click a game file to play it, or run: $bin/$program --play <game>"
+	exit 0
+	;;
 *)
 	echo "usage: $0 hue|turntable" >&2
 	exit 2
