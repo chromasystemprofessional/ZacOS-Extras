@@ -5,6 +5,7 @@
 #include <QFileInfo>
 #include <QProcess>
 #include <QProcessEnvironment>
+#include <QSettings>
 #include <QStandardPaths>
 #include <cstdio>
 #include <cstdlib>
@@ -32,13 +33,24 @@ static QString configDir() {
 		"/zacos9/gameplayer";
 }
 
+static bool readFullscreen() {
+	QSettings s(configDir() + "/gameplayer.conf", QSettings::IniFormat);
+	return s.value("fullscreen", false).toBool();
+}
+
+static void writeFullscreen(bool value) {
+	QSettings s(configDir() + "/gameplayer.conf", QSettings::IniFormat);
+	s.setValue("fullscreen", value);
+	s.sync();
+}
+
 static int checkGame(const QString &file) {
 	const System sys = detectSystem(file);
 	printf("system: %s\n", qPrintable(systemName(sys)));
 	const QString lf = launchFile(sys, file);
 	printf("game: %s\n", qPrintable(QFileInfo(lf).fileName()));
 	QString error;
-	const Launch launch = buildLaunch(sys, lf, configDir(), &error);
+	const Launch launch = buildLaunch(sys, lf, configDir(), readFullscreen(), &error);
 	if (launch.program.isEmpty()) {
 		if (sys == System::None) {
 			printf("error: that file isn't a game Game Player knows how to play.\n");
@@ -66,50 +78,74 @@ static int playGame(const QString &file) {
 	}
 	const QString lf = launchFile(sys, file);
 	const QString game = QFileInfo(lf).completeBaseName();
-	QString error;
-	const Launch launch = buildLaunch(sys, lf, configDir(), &error);
-	if (launch.program.isEmpty()) {
-		QMessageBox::critical(nullptr, "Game Player",
-			error.isEmpty() ? "Game Player can't run this game." : error);
-		return 2;
-	}
-	if (!ensureConfigs(configDir())) {
-		QMessageBox::critical(nullptr, "Game Player", "Game Player couldn't write its settings.");
-		return 2;
-	}
 
 	CollarExtensionService service("GamePlayer");
-	QProcess engine;
-	GameModule module(&service, game, systemName(sys), &engine);
 	QString startError;
 	if (!service.start(&startError)) {
 		fprintf(stderr, "zacos9-gameplayer: %s\n", qPrintable(startError));
 	}
 
-	engine.setProgram(launch.program);
-	engine.setArguments(launch.args);
-	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-	for (const QString &e : launch.env) {
-		const int eq = e.indexOf('=');
-		if (eq > 0) {
-			env.insert(e.left(eq), e.mid(eq + 1));
-		}
-	}
-	engine.setProcessEnvironment(env);
-	engine.setProcessChannelMode(QProcess::ForwardedChannels);
-
-	QObject::connect(&engine, &QProcess::errorOccurred, [&](QProcess::ProcessError e) {
-		if (e == QProcess::FailedToStart) {
+	bool running = true;
+	while (running) {
+		const bool fullscreen = readFullscreen();
+		QString error;
+		const Launch launch = buildLaunch(sys, lf, configDir(), fullscreen, &error);
+		if (launch.program.isEmpty()) {
 			QMessageBox::critical(nullptr, "Game Player",
-				QString("Game Player couldn't start %1.").arg(launch.program));
-			QCoreApplication::exit(2);
+				error.isEmpty() ? "Game Player can't run this game." : error);
+			return 2;
 		}
-	});
-	QObject::connect(&engine, &QProcess::finished, [](int, QProcess::ExitStatus) {
-		QCoreApplication::quit();
-	});
-	engine.start();
-	return qApp->exec();
+		if (!ensureConfigs(configDir(), fullscreen)) {
+			QMessageBox::critical(nullptr, "Game Player", "Game Player couldn't write its settings.");
+			return 2;
+		}
+
+		QProcess engine;
+		GameModule module(&service, game, sys, fullscreen, &engine);
+		module.clearRestartRequested();
+		service.changed();
+
+		engine.setProgram(launch.program);
+		engine.setArguments(launch.args);
+		QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+		for (const QString &e : launch.env) {
+			const int eq = e.indexOf('=');
+			if (eq > 0) {
+				env.insert(e.left(eq), e.mid(eq + 1));
+			}
+		}
+		engine.setProcessEnvironment(env);
+		engine.setProcessChannelMode(QProcess::ForwardedChannels);
+
+		QObject::connect(&engine, &QProcess::errorOccurred, [&](QProcess::ProcessError e) {
+			if (e == QProcess::FailedToStart) {
+				QMessageBox::critical(nullptr, "Game Player",
+					QString("Game Player couldn't start %1.").arg(launch.program));
+				QCoreApplication::exit(2);
+			}
+		});
+		QObject::connect(&engine, &QProcess::finished, qApp, [&]() {
+			if (module.restartRequested()) {
+				writeFullscreen(module.fullscreen());
+				/* Restart: the loop relaunches the engine. */
+				QCoreApplication::exit(0);  // exit code 0 signals "restart"
+			} else {
+				QCoreApplication::quit();
+			}
+		});
+
+		engine.start();
+		const int code = qApp->exec();
+		if (code == 2) {
+			return 2;  // fatal error
+		}
+		if (module.restartRequested()) {
+			writeFullscreen(module.fullscreen());
+			continue;  // relaunch
+		}
+		running = false;
+	}
+	return 0;
 }
 
 int main(int argc, char **argv) {

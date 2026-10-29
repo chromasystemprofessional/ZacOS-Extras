@@ -6,8 +6,6 @@
 #include <QProcessEnvironment>
 #include <QStandardPaths>
 
-#include <algorithm>
-
 using namespace gameplayer;
 
 namespace {
@@ -121,6 +119,10 @@ static QString mupenDatadir() {
 	return v.isEmpty() ? QString("/usr/share/mupen64plus") : QString::fromLocal8Bit(v);
 }
 
+static QString mupenPluginDir() {
+	return "/usr/lib/x86_64-linux-gnu/mupen64plus";
+}
+
 } // namespace
 
 System gameplayer::detectSystem(const QString &path) {
@@ -189,7 +191,7 @@ QString gameplayer::systemName(System system) {
 }
 
 Launch gameplayer::buildLaunch(System system, const QString &file, const QString &configDir,
-		QString *error) {
+		bool fullscreen, QString *error) {
 	Launch l;
 	const QString coreOverride = qgetenv("ZACOS9_GAMEPLAYER_CORES");
 	switch (system) {
@@ -222,11 +224,16 @@ Launch gameplayer::buildLaunch(System system, const QString &file, const QString
 		l.program = "mupen64plus";
 		l.args << "--corelib" << mupenCorelib()
 			<< "--configdir" << (configDir + "/mupen64plus")
-			<< "--datadir" << mupenDatadir()
-			<< "--gfx" << "mupen64plus-video-glide64mk2"
-			<< "--audio" << "mupen64plus-audio-sdl"
-			<< "--input" << "mupen64plus-input-sdl"
-			<< "--rsp" << "mupen64plus-rsp-hle"
+			<< "--datadir" << mupenDatadir();
+		if (fullscreen) {
+			l.args << "--fullscreen";
+		} else {
+			l.args << "--windowed";
+		}
+		l.args << "--gfx" << (mupenPluginDir() + "/mupen64plus-video-glide64mk2.so")
+			<< "--audio" << (mupenPluginDir() + "/mupen64plus-audio-sdl.so")
+			<< "--input" << (mupenPluginDir() + "/mupen64plus-input-sdl.so")
+			<< "--rsp" << (mupenPluginDir() + "/mupen64plus-rsp-hle.so")
 			<< file;
 		l.env << "SDL_VIDEODRIVER=x11";
 		break;
@@ -249,7 +256,7 @@ Launch gameplayer::buildLaunch(System system, const QString &file, const QString
 	return l;
 }
 
-bool gameplayer::ensureConfigs(const QString &configDir) {
+bool gameplayer::ensureConfigs(const QString &configDir, bool fullscreen) {
 	QDir().mkpath(configDir);
 	QDir().mkpath(configDir + "/mednafen/firmware");
 	QDir().mkpath(configDir + "/mupen64plus");
@@ -259,26 +266,34 @@ bool gameplayer::ensureConfigs(const QString &configDir) {
 	if (!rc.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
 		return false;
 	}
-	rc.write(retroarchConfig(saveDir).toUtf8());
+	rc.write(retroarchConfig(saveDir, fullscreen).toUtf8());
 	rc.close();
 	const QString med = configDir + "/mednafen/mednafen.cfg";
-	if (!QFileInfo(med).exists()) {
-		QFile f(med);
-		if (f.open(QIODevice::WriteOnly)) {
-			f.write("; Game Player: windowed. BIOS files (scph5501.bin and the like)\n"
-				"; belong in the firmware folder beside this file.\nvideo.fs 0\n");
-			f.close();
-		}
+	QFile f(med);
+	if (f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+		f.write(mednafenConfig(fullscreen).toUtf8());
+		f.close();
 	}
 	return true;
 }
 
-QString gameplayer::retroarchConfig(const QString &saveDir) {
+QString gameplayer::retroarchConfig(const QString &saveDir, bool fullscreen) {
 	return QStringLiteral(
 		"config_save_on_exit = \"false\"\n"
 		"savestate_auto_save = \"true\"\n"
 		"savestate_auto_load = \"true\"\n"
 		"savestate_directory = \"%1\"\n"
 		"savefile_directory = \"%1\"\n"
-		"video_fullscreen = \"false\"\n").arg(saveDir);
+		"video_fullscreen = \"%2\"\n"
+		"network_cmd_enable = \"true\"\n"
+		"network_cmd_port = \"55355\"\n").arg(saveDir).arg(fullscreen ? "true" : "false");
+}
+
+QString gameplayer::mednafenConfig(bool fullscreen) {
+	return QStringLiteral(
+		"; Game Player: BIOS files (scph5501.bin and the like) belong in the\n"
+		"; firmware folder beside this file.\n"
+		"video.fs %1\n"
+		"autosave 1\n"
+		"load_state 1\n").arg(fullscreen ? 1 : 0);
 }

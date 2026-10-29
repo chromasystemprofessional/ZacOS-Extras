@@ -35,15 +35,19 @@ struct Launch {
 	QStringList env; /* NAME=value added to the engine's environment */
 };
 
-/* The engine run for a game file, or an empty program when it is unknown or
- * the engine is not installed. Config files are written by ensureConfigs(). */
+/* The engine run for a game file. `fullscreen` controls whether the engine
+ * starts full-screen. An empty program means unknown system or missing engine;
+ * `error` says why. */
 Launch buildLaunch(System system, const QString &file, const QString &configDir,
-		QString *error = nullptr);
+		bool fullscreen, QString *error = nullptr);
 
 /* Write the engine config files (RetroArch, mednafen, mupen64plus). */
-bool ensureConfigs(const QString &configDir);
+bool ensureConfigs(const QString &configDir, bool fullscreen);
 
 /* The RetroArch config written on first run, with absolute save paths. */
-QString retroarchConfig(const QString &saveDir);
+QString retroarchConfig(const QString &saveDir, bool fullscreen);
+
+/* Mednafen config (windowed/fullscreen, autosave). */
+QString mednafenConfig(bool fullscreen);
 
 } // namespace gameplayer

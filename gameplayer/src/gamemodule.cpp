@@ -41,8 +41,9 @@ static QImage moduleIcon() {
 }
 
 GameModule::GameModule(CollarExtensionService *service, const QString &game,
-		const QString &system, QProcess *engine, QObject *parent)
-	: QObject(parent), m_service(service), m_game(game), m_system(system), m_engine(engine) {
+		gameplayer::System system, bool fullscreen, QProcess *engine, QObject *parent)
+	: QObject(parent), m_service(service), m_game(game), m_system(system),
+	  m_fullscreen(fullscreen), m_engine(engine) {
 	m_service->modules = [this] { return QList<CollarModule>{ module() }; };
 	m_service->activate = [this](const QString &, const QString &item, Done done) {
 		activate(item, std::move(done));
@@ -61,22 +62,28 @@ CollarModule GameModule::module() const {
 	m.id = "gameplayer";
 	m.label = "Game Player";
 	m.active = true;
-	m.description = m_system.isEmpty() ? m_game : (m_game + " (" + m_system + ")");
+	m.description = m_game.isEmpty() ? QString("Playing a game")
+		: (m_game + " (" + gameplayer::systemName(m_system) + ")");
 	m.icon = moduleIcon();
-	m.menu << CollarMenuItem::text(m_game.isEmpty() ? "Playing a game" : m_game);
-	if (!m_system.isEmpty()) {
-		m.menu << CollarMenuItem::text(m_system);
-	}
-	m.menu << CollarMenuItem::separator()
+	m.menu << CollarMenuItem::text(m_game.isEmpty() ? "Playing a game" : m_game)
+		<< CollarMenuItem::text(gameplayer::systemName(m_system))
+		<< CollarMenuItem::separator()
+		<< CollarMenuItem::action("fullscreen", "Fullscreen", true, m_fullscreen)
 		<< CollarMenuItem::action("quit", "Quit Game");
 	return m;
 }
 
 void GameModule::activate(const QString &item, Done done) {
-	if (item == "quit") {
-		/* Terminate the engine; if it ignores that, finish it off. The program
-		 * quits through the engine's finished signal, so progress saved on exit
-		 * (RetroArch's auto-save) has a chance to be written. */
+	if (item == "fullscreen") {
+		m_fullscreen = !m_fullscreen;
+		m_restartRequested = true;
+		if (m_engine && m_engine->state() != QProcess::NotRunning) {
+			m_engine->terminate();
+			m_kill.start();
+		}
+		done(QString());
+	} else if (item == "quit") {
+		/* Terminate the engine; the program exits through the finished signal. */
 		if (m_engine && m_engine->state() != QProcess::NotRunning) {
 			m_engine->terminate();
 			m_kill.start();
