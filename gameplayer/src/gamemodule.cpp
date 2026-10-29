@@ -76,6 +76,9 @@ CollarModule GameModule::module() const {
 		<< CollarMenuItem::text(gameplayer::systemName(m_system))
 		<< CollarMenuItem::separator()
 		<< CollarMenuItem::action("fullscreen", "Fullscreen", true, m_fullscreen)
+		<< CollarMenuItem::action("save", "Save State")
+		<< CollarMenuItem::action("load", "Load State")
+		<< CollarMenuItem::separator()
 		<< CollarMenuItem::action("quit", "Quit Game");
 	return m;
 }
@@ -104,6 +107,20 @@ void GameModule::activate(const QString &item, Done done) {
 			}
 			done(QString());
 		}
+	} else if (item == "save") {
+		if (isRetroArchSystem(m_system)) {
+			QUdpSocket sock;
+			sock.writeDatagram("SAVE_STATE", QHostAddress("127.0.0.1"), 55355);
+			sock.flush();
+		}
+		done(QString());
+	} else if (item == "load") {
+		if (isRetroArchSystem(m_system)) {
+			QUdpSocket sock;
+			sock.writeDatagram("LOAD_STATE", QHostAddress("127.0.0.1"), 55355);
+			sock.flush();
+		}
+		done(QString());
 	} else if (item == "quit") {
 		m_quitRequested = true;
 		if (m_engine && m_engine->state() != QProcess::NotRunning) {
