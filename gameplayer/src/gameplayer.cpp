@@ -289,6 +289,7 @@ QString gameplayer::retroarchConfig(const QString &saveDir, bool fullscreen) {
 		"savefile_directory = \"%1\"\n"
 		"video_fullscreen = \"%2\"\n"
 		"video_windowed_fullscreen = \"false\"\n"
+		"aspect_ratio_index = \"0\"\n"
 		"audio_driver = \"sdl\"\n"
 		"audio_enable = \"true\"\n"
 		"audio_volume = \"1.0\"\n"

@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QFile>
+#include <QDir>
 #include <QFileInfo>
 #include <QProcess>
 #include <QTextStream>
@@ -72,6 +73,18 @@ static int checkGame(const QString &file) {
 }
 
 static int playGame(const QString &file) {
+	/* Write a startup marker so we can tell whether the program ran at all. */
+	{
+		QDir().mkpath(configDir());
+		QFile marker(configDir() + "/startup.log");
+		if (marker.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+			QTextStream out(&marker);
+			out << "file: " << file << "\n";
+			out << "exists: " << QFile::exists(file) << "\n";
+			out << "system: " << (int)detectSystem(file) << " (" << systemName(detectSystem(file)) << ")\n";
+			marker.close();
+		}
+	}
 	const System sys = detectSystem(file);
 	if (sys == System::None) {
 		QMessageBox::critical(nullptr, "Game Player",
