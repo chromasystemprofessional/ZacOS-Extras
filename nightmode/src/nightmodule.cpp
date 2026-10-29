@@ -11,6 +11,7 @@
 #include <QGuiApplication>
 #include <QPainter>
 #include <QProcess>
+#include <QSaveFile>
 #include <QScreen>
 #include <QSettings>
 #include <QStandardPaths>
@@ -131,11 +132,34 @@ void NightModule::save() {
 	s.sync();
 }
 
+/* The compositor owns the tint (a scene rectangle over every screen), so
+ * Night Mode only writes "night-mode=1|0" to desktop.conf and lets the
+ * compositor's settings watcher apply it. */
 void NightModule::apply() {
-	if (m_on) {
-		createOverlays();
-	} else {
-		destroyOverlays();
+	const QString dir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) +
+		QStringLiteral("/zacos9");
+	QDir().mkpath(dir);
+	const QString path = dir + QStringLiteral("/desktop.conf");
+	QStringList lines;
+	QFile in(path);
+	if (in.open(QIODevice::ReadOnly)) {
+		lines = QString::fromUtf8(in.readAll()).split(QLatin1Char('\n'));
+		in.close();
+	}
+	bool found = false;
+	for (QString &line : lines) {
+		if (line.startsWith(QStringLiteral("night-mode="))) {
+			line = QStringLiteral("night-mode=") + (m_on ? QStringLiteral("1") : QStringLiteral("0"));
+			found = true;
+		}
+	}
+	if (!found) {
+		lines << QStringLiteral("night-mode=") + (m_on ? QStringLiteral("1") : QStringLiteral("0"));
+	}
+	QSaveFile out(path);
+	if (out.open(QIODevice::WriteOnly)) {
+		out.write(lines.join(QLatin1Char('\n')).toUtf8());
+		out.commit();
 	}
 }
 
