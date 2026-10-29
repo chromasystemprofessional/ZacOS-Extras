@@ -1,5 +1,6 @@
 #include "gamemodule.h"
 
+#include <QDir>
 #include <QImage>
 #include <QUdpSocket>
 
@@ -78,6 +79,7 @@ CollarModule GameModule::module() const {
 		<< CollarMenuItem::action("fullscreen", "Fullscreen", true, m_fullscreen)
 		<< CollarMenuItem::action("save", "Save State")
 		<< CollarMenuItem::action("load", "Load State")
+		<< CollarMenuItem::action("opensaves", "Open Saves Folder")
 		<< CollarMenuItem::separator()
 		<< CollarMenuItem::action("quit", "Quit Game");
 	return m;
@@ -120,6 +122,11 @@ void GameModule::activate(const QString &item, Done done) {
 			sock.writeDatagram("LOAD_STATE", QHostAddress("127.0.0.1"), 55355);
 			sock.flush();
 		}
+		done(QString());
+	} else if (item == "opensaves") {
+		const QString saveDir = QDir::homePath() + "/Games/Saved Games";
+		QDir().mkpath(saveDir);
+		QProcess::startDetached("xdg-open", QStringList() << saveDir);
 		done(QString());
 	} else if (item == "quit") {
 		m_quitRequested = true;
