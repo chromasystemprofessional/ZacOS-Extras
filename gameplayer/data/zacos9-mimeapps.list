@@ -1,0 +1,10 @@
+[Default Applications]
+application/x-nes-rom=zacos9-gameplayer.desktop
+application/vnd.nintendo.snes.rom=zacos9-gameplayer.desktop
+application/x-cue=zacos9-gameplayer.desktop
+application/x-n64-rom=zacos9-gameplayer.desktop
+application/x-genesis-rom=zacos9-gameplayer.desktop
+application/x-sms-rom=zacos9-gameplayer.desktop
+application/x-gameboy-rom=zacos9-gameplayer.desktop
+application/x-gameboy-color-rom=zacos9-gameplayer.desktop
+application/x-gba-rom=zacos9-gameplayer.desktop
