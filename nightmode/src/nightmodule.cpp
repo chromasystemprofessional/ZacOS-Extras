@@ -110,9 +110,11 @@ void NightModule::createOverlays() {
 			Qt::Tool | Qt::WindowTransparentForInput);
 		overlay->setAttribute(Qt::WA_TranslucentBackground);
 		overlay->setAttribute(Qt::WA_ShowWithoutActivating);
-		overlay->setStyleSheet(QStringLiteral("background-color: rgba(255, 140, 0, 45);"));
+		overlay->setAttribute(Qt::WA_StyledBackground);
+		overlay->setStyleSheet(QStringLiteral("background-color: rgba(255, 120, 0, 90);"));
 		overlay->setGeometry(screen->geometry());
 		overlay->show();
+		overlay->raise();
 		m_overlays.append(overlay);
 	}
 }
