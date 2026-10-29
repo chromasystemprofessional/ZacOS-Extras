@@ -1,10 +1,15 @@
 #include "nightmodule.h"
 
+#include <QApplication>
 #include <QDir>
 #include <QFile>
+#include <QGuiApplication>
+#include <QPainter>
 #include <QProcess>
+#include <QScreen>
 #include <QStandardPaths>
 #include <QString>
+#include <QWidget>
 
 static const char *const MoonArt[16] = {
 	"..............##",
@@ -57,6 +62,10 @@ static QImage makeIcon(const char *const art[16], QRgb ink) {
 	return image;
 }
 
+NightModule::~NightModule() {
+	destroyOverlays();
+}
+
 NightModule::NightModule(CollarExtensionService *service, QObject *parent)
 	: QObject(parent), m_service(service) {
 	load();
@@ -86,16 +95,34 @@ void NightModule::save() {
 }
 
 void NightModule::apply() {
-	QProcess proc;
 	if (m_on) {
-		proc.start(QStringLiteral("gammastep"), { QStringLiteral("-O"), QStringLiteral("3500") });
+		createOverlays();
 	} else {
-		proc.start(QStringLiteral("gammastep"), { QStringLiteral("-x") });
+		destroyOverlays();
 	}
-	if (!proc.waitForFinished(2000)) {
-		proc.kill();
-		proc.waitForFinished(1000);
+}
+
+void NightModule::createOverlays() {
+	destroyOverlays();
+	for (QScreen *screen : QGuiApplication::screens()) {
+		auto *overlay = new QWidget(nullptr);
+		overlay->setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint |
+			Qt::Tool | Qt::WindowTransparentForInput);
+		overlay->setAttribute(Qt::WA_TranslucentBackground);
+		overlay->setAttribute(Qt::WA_ShowWithoutActivating);
+		overlay->setStyleSheet(QStringLiteral("background-color: rgba(255, 140, 0, 45);"));
+		overlay->setGeometry(screen->geometry());
+		overlay->show();
+		m_overlays.append(overlay);
 	}
+}
+
+void NightModule::destroyOverlays() {
+	for (QWidget *w : m_overlays) {
+		w->hide();
+		w->deleteLater();
+	}
+	m_overlays.clear();
 }
 
 QList<CollarModule> NightModule::modules() const {

@@ -1,11 +1,11 @@
 #include "collarextension.h"
 #include "nightmodule.h"
 
-#include <QCoreApplication>
+#include <QApplication>
 #include <cstdio>
 
 int main(int argc, char **argv) {
-	QCoreApplication app(argc, argv);
+	QApplication app(argc, argv);
 	app.setApplicationName("zacos9-collar-nightmode");
 
 	CollarExtensionService service("NightMode");
