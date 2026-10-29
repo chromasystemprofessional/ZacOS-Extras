@@ -3,6 +3,7 @@
 #include <QImage>
 #include <QProcess>
 #include <QTimer>
+#include <QUdpSocket>
 #include <functional>
 #include <QObject>
 
@@ -11,9 +12,7 @@
 
 /*
  * The Collar module that appears while a game runs: the game's name, a
- * Fullscreen toggle, and a Quit Game item. Quitting (or toggling fullscreen,
- * which restarts the engine) terminates the engine; the program exits when the
- * engine finishes, unless a restart was requested.
+ * Fullscreen toggle, and a Quit Game item.
  */
 class GameModule : public QObject {
 public:
@@ -23,17 +22,22 @@ public:
 		gameplayer::System system, bool fullscreen, QProcess *engine,
 		QObject *parent = nullptr);
 
+	std::function<void(bool)> fullscreenChanged;
+
 	CollarModule module() const;
 	void activate(const QString &item, Done done);
 
-	/* Flipped by the Fullscreen item; the program reads this on relaunch. */
 	bool fullscreen() const { return m_fullscreen; }
 
-	/* Set by activate("fullscreen"); the program restarts the engine when set. */
+	/* Set by activate when the engine must be restarted (non-RetroArch). */
 	bool restartRequested() const { return m_restartRequested; }
+	bool quitRequested() const { return m_quitRequested; }
 	void clearRestartRequested() { m_restartRequested = false; }
+	void clearQuitRequested() { m_quitRequested = false; }
 
 private:
+	bool isRetroArch() const;
+
 	CollarExtensionService *m_service;
 	QString m_game;
 	gameplayer::System m_system;
@@ -41,4 +45,5 @@ private:
 	QProcess *m_engine;
 	QTimer m_kill;
 	bool m_restartRequested = false;
+	bool m_quitRequested = false;
 };

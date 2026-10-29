@@ -103,6 +103,7 @@ static int playGame(const QString &file) {
 		QProcess engine;
 		GameModule module(&service, game, sys, fullscreen, &engine);
 		module.clearRestartRequested();
+		module.fullscreenChanged = [](bool v) { writeFullscreen(v); };
 		service.changed();
 
 		engine.setProgram(launch.program);
@@ -125,7 +126,9 @@ static int playGame(const QString &file) {
 			}
 		});
 		QObject::connect(&engine, &QProcess::finished, qApp, [&]() {
-			if (module.restartRequested()) {
+			if (module.quitRequested()) {
+				QCoreApplication::quit();
+			} else if (module.restartRequested()) {
 				writeFullscreen(module.fullscreen());
 				/* Restart: the loop relaunches the engine. */
 				QCoreApplication::exit(0);  // exit code 0 signals "restart"

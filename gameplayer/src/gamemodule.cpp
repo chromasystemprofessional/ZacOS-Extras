@@ -1,6 +1,7 @@
 #include "gamemodule.h"
 
 #include <QImage>
+#include <QUdpSocket>
 
 /* 16 x 16: a game cartridge, drawn the way The Collar's other modules draw
  * their icons. */
@@ -40,6 +41,12 @@ static QImage moduleIcon() {
 	return image;
 }
 
+static bool isRetroArchSystem(gameplayer::System s) {
+	return s == gameplayer::System::Nes || s == gameplayer::System::Snes ||
+		s == gameplayer::System::Sega || s == gameplayer::System::GameBoy ||
+		s == gameplayer::System::Gba;
+}
+
 GameModule::GameModule(CollarExtensionService *service, const QString &game,
 		gameplayer::System system, bool fullscreen, QProcess *engine, QObject *parent)
 	: QObject(parent), m_service(service), m_game(game), m_system(system),
@@ -76,14 +83,29 @@ CollarModule GameModule::module() const {
 void GameModule::activate(const QString &item, Done done) {
 	if (item == "fullscreen") {
 		m_fullscreen = !m_fullscreen;
-		m_restartRequested = true;
-		if (m_engine && m_engine->state() != QProcess::NotRunning) {
-			m_engine->terminate();
-			m_kill.start();
+		if (fullscreenChanged) {
+			fullscreenChanged(m_fullscreen);
 		}
-		done(QString());
+		if (isRetroArchSystem(m_system)) {
+			/* RetroArch: toggle instantly via its network command interface
+			 * (no restart, no state loss). */
+			QUdpSocket sock;
+			sock.writeDatagram("FULLSCREEN_TOGGLE",
+				QHostAddress("127.0.0.1"), 55355);
+			sock.flush();
+			m_service->changed();
+			done(QString());
+		} else {
+			/* mednafen / mupen64plus: restart the engine in the other mode. */
+			m_restartRequested = true;
+			if (m_engine && m_engine->state() != QProcess::NotRunning) {
+				m_engine->terminate();
+				m_kill.start();
+			}
+			done(QString());
+		}
 	} else if (item == "quit") {
-		/* Terminate the engine; the program exits through the finished signal. */
+		m_quitRequested = true;
 		if (m_engine && m_engine->state() != QProcess::NotRunning) {
 			m_engine->terminate();
 			m_kill.start();
