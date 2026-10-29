@@ -2,8 +2,10 @@
 
 #include <QApplication>
 #include <QMessageBox>
+#include <QFile>
 #include <QFileInfo>
 #include <QProcess>
+#include <QTextStream>
 #include <QProcessEnvironment>
 #include <QSettings>
 #include <QStandardPaths>
@@ -117,6 +119,22 @@ static int playGame(const QString &file) {
 		}
 		engine.setProcessEnvironment(env);
 		engine.setProcessChannelMode(QProcess::ForwardedChannels);
+
+		/* Log the launch for diagnosis. */
+		{
+			QFile log(configDir() + "/engine.log");
+			if (log.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+				QTextStream out(&log);
+				out << "program: " << launch.program << "\n";
+				out << "args: " << launch.args.join(" ") << "\n";
+				out << "env:\n";
+				for (const QString &k : env.keys()) {
+					out << "  " << k << "=" << env.value(k) << "\n";
+				}
+				out << "---\n";
+				log.close();
+			}
+		}
 
 		QObject::connect(&engine, &QProcess::errorOccurred, [&](QProcess::ProcessError e) {
 			if (e == QProcess::FailedToStart) {
