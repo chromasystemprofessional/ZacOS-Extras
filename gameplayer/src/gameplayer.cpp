@@ -335,6 +335,8 @@ QString gameplayer::retroarchConfig(const QString &saveDir, bool fullscreen) {
 		"video_fullscreen = \"%2\"\n"
 		"video_windowed_fullscreen = \"false\"\n"
 		"aspect_ratio_index = \"0\"\n"
+		"input_mouse_grab = \"false\"\n"
+		"input_toggle_fullscreen = \"f11\"\n"
 		"audio_driver = \"sdl\"\n"
 		"joypad_autoconfig_dir = \"%3/.config/retroarch/autoconfig\"\n"
 		"audio_enable = \"true\"\n"
