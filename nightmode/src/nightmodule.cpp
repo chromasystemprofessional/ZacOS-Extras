@@ -143,6 +143,7 @@ void NightModule::createOverlays() {
 	destroyOverlays();
 	for (QScreen *screen : QGuiApplication::screens()) {
 		auto *overlay = new NightOverlay(nullptr);
+		overlay->setScreen(screen);
 		overlay->setGeometry(screen->geometry());
 		overlay->show();
 		overlay->raise();
