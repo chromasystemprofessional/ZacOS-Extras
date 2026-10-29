@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Night Mode for The Collar
+Comment=Warm screen colour, on and off from The Collar
+Exec=zacos9-collar-nightmode
+NoDisplay=true
+OnlyShowIn=ZacOS9;
+X-GNOME-Autostart-enabled=true
