@@ -65,7 +65,6 @@ NightModule::NightModule(CollarExtensionService *service, QObject *parent)
 		std::function<void(const QString &)> done) {
 		activate(module, item, std::move(done));
 	};
-	apply();
 }
 
 void NightModule::load() {
@@ -87,10 +86,15 @@ void NightModule::save() {
 }
 
 void NightModule::apply() {
+	QProcess proc;
 	if (m_on) {
-		QProcess::execute(QStringLiteral("gammastep"), { QStringLiteral("-O"), QStringLiteral("3500") });
+		proc.start(QStringLiteral("gammastep"), { QStringLiteral("-O"), QStringLiteral("3500") });
 	} else {
-		QProcess::execute(QStringLiteral("gammastep"), { QStringLiteral("-x") });
+		proc.start(QStringLiteral("gammastep"), { QStringLiteral("-x") });
+	}
+	if (!proc.waitForFinished(2000)) {
+		proc.kill();
+		proc.waitForFinished(1000);
 	}
 }
 
