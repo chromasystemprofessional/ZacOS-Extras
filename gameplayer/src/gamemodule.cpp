@@ -49,9 +49,9 @@ static bool isRetroArchSystem(gameplayer::System s) {
 }
 
 GameModule::GameModule(CollarExtensionService *service, const QString &game,
-		gameplayer::System system, bool fullscreen, QProcess *engine, QObject *parent)
+		gameplayer::System system, QProcess *engine, QObject *parent)
 	: QObject(parent), m_service(service), m_game(game), m_system(system),
-	  m_fullscreen(fullscreen), m_engine(engine) {
+	  m_engine(engine) {
 	m_service->modules = [this] { return QList<CollarModule>{ module() }; };
 	m_service->activate = [this](const QString &, const QString &item, Done done) {
 		activate(item, std::move(done));
@@ -76,7 +76,6 @@ CollarModule GameModule::module() const {
 	m.menu << CollarMenuItem::text(m_game.isEmpty() ? "Playing a game" : m_game)
 		<< CollarMenuItem::text(gameplayer::systemName(m_system))
 		<< CollarMenuItem::separator()
-		<< CollarMenuItem::action("fullscreen", "Fullscreen", true, m_fullscreen)
 		<< CollarMenuItem::action("save", "Save State")
 		<< CollarMenuItem::action("load", "Load State")
 		<< CollarMenuItem::action("opensaves", "Open Saves Folder")
@@ -86,30 +85,7 @@ CollarModule GameModule::module() const {
 }
 
 void GameModule::activate(const QString &item, Done done) {
-	if (item == "fullscreen") {
-		m_fullscreen = !m_fullscreen;
-		if (fullscreenChanged) {
-			fullscreenChanged(m_fullscreen);
-		}
-		if (isRetroArchSystem(m_system)) {
-			/* RetroArch: toggle instantly via its network command interface
-			 * (no restart, no state loss). */
-			QUdpSocket sock;
-			sock.writeDatagram("FULLSCREEN_TOGGLE",
-				QHostAddress("127.0.0.1"), 55355);
-			sock.flush();
-			m_service->changed();
-			done(QString());
-		} else {
-			/* mednafen / mupen64plus: restart the engine in the other mode. */
-			m_restartRequested = true;
-			if (m_engine && m_engine->state() != QProcess::NotRunning) {
-				m_engine->terminate();
-				m_kill.start();
-			}
-			done(QString());
-		}
-	} else if (item == "save") {
+	if (item == "save") {
 		if (isRetroArchSystem(m_system)) {
 			QUdpSocket sock;
 			sock.writeDatagram("SAVE_STATE", QHostAddress("127.0.0.1"), 55355);
@@ -129,7 +105,6 @@ void GameModule::activate(const QString &item, Done done) {
 		QProcess::startDetached("xdg-open", QStringList() << saveDir);
 		done(QString());
 	} else if (item == "quit") {
-		m_quitRequested = true;
 		if (m_engine && m_engine->state() != QProcess::NotRunning) {
 			m_engine->terminate();
 			m_kill.start();
