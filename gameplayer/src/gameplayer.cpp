@@ -211,6 +211,7 @@ Launch gameplayer::buildLaunch(System system, const QString &file, const QString
 		l.args << "--config" << (configDir + "/retroarch.cfg")
 			<< "-L" << findCore(QString::fromLatin1(core), coreOverride)
 			<< file;
+		l.env << "SDL_AUDIODRIVER=pulse";
 		break;
 	}
 	case System::Ps1: {
@@ -287,6 +288,8 @@ QString gameplayer::retroarchConfig(const QString &saveDir, bool fullscreen) {
 		"savestate_directory = \"%1\"\n"
 		"savefile_directory = \"%1\"\n"
 		"video_fullscreen = \"%2\"\n"
+		"video_windowed_fullscreen = \"false\"\n"
+		"audio_driver = \"sdl\"\n"
 		"audio_enable = \"true\"\n"
 		"audio_volume = \"1.0\"\n"
 		"network_cmd_enable = \"true\"\n"
