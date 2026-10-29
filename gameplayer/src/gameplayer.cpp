@@ -119,6 +119,38 @@ static QString mupenDatadir() {
 	return v.isEmpty() ? QString("/usr/share/mupen64plus") : QString::fromLocal8Bit(v);
 }
 
+static QString logitechDualActionProfile() {
+	return QStringLiteral(
+		"input_device = \"Logitech Logitech Dual Action\"\n"
+		"input_driver = \"udev\"\n"
+		"input_vendor_id = \"1133\"\n"
+		"input_product_id = \"49686\"\n"
+		"input_b_btn = \"2\"\n"
+		"input_a_btn = \"1\"\n"
+		"input_y_btn = \"0\"\n"
+		"input_x_btn = \"3\"\n"
+		"input_start_btn = \"9\"\n"
+		"input_select_btn = \"8\"\n"
+		"input_l_btn = \"4\"\n"
+		"input_r_btn = \"5\"\n"
+		"input_l2_btn = \"6\"\n"
+		"input_r2_btn = \"7\"\n"
+		"input_l3_btn = \"10\"\n"
+		"input_r3_btn = \"11\"\n"
+		"input_l_x_plus_axis = \"+0\"\n"
+		"input_l_x_minus_axis = \"-0\"\n"
+		"input_l_y_plus_axis = \"+1\"\n"
+		"input_l_y_minus_axis = \"-1\"\n"
+		"input_r_x_plus_axis = \"+2\"\n"
+		"input_r_x_minus_axis = \"-2\"\n"
+		"input_r_y_plus_axis = \"+3\"\n"
+		"input_r_y_minus_axis = \"-3\"\n"
+		"input_up_btn = \"h0up\"\n"
+		"input_down_btn = \"h0down\"\n"
+		"input_left_btn = \"h0left\"\n"
+		"input_right_btn = \"h0right\"\n");
+}
+
 static QString mupenPluginDir() {
 	return "/usr/lib/x86_64-linux-gnu/mupen64plus";
 }
@@ -265,6 +297,19 @@ bool gameplayer::ensureConfigs(const QString &configDir, bool fullscreen) {
 	QDir().mkpath(configDir + "/mupen64plus");
 	const QString saveDir = QDir::homePath() + "/Games/Saved Games";
 	QDir().mkpath(saveDir);
+
+	/* Autoconfig profile for the Logitech Dual Action gamepad, so RetroArch
+	 * picks it up without manual button mapping. Written once. */
+	const QString autoconfigDir = QDir::homePath() + "/.config/retroarch/autoconfig";
+	QDir().mkpath(autoconfigDir);
+	const QString profile = autoconfigDir + "/Logitech Logitech Dual Action.cfg";
+	if (!QFileInfo(profile).exists()) {
+		QFile f(profile);
+		if (f.open(QIODevice::WriteOnly)) {
+			f.write(logitechDualActionProfile().toUtf8());
+			f.close();
+		}
+	}
 	QFile rc(configDir + "/retroarch.cfg");
 	if (!rc.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
 		return false;
@@ -291,10 +336,12 @@ QString gameplayer::retroarchConfig(const QString &saveDir, bool fullscreen) {
 		"video_windowed_fullscreen = \"false\"\n"
 		"aspect_ratio_index = \"0\"\n"
 		"audio_driver = \"sdl\"\n"
+		"joypad_autoconfig_dir = \"%3/.config/retroarch/autoconfig\"\n"
 		"audio_enable = \"true\"\n"
 		"audio_volume = \"1.0\"\n"
+		"input_toggle_fullscreen = \"f11\"\n"
 		"network_cmd_enable = \"true\"\n"
-		"network_cmd_port = \"55355\"\n").arg(saveDir).arg(fullscreen ? "true" : "false");
+		"network_cmd_port = \"55355\"\n").arg(saveDir).arg(fullscreen ? "true" : "false").arg(QDir::homePath());
 }
 
 QString gameplayer::mednafenConfig(bool fullscreen) {
