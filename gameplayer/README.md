@@ -22,7 +22,10 @@ Debian's archive; installing the extra pulls them all in.
    Without them mednafen says so and the game won't run.
 4. **Nintendo 64** uses mupen64plus's default settings; its config goes in
    `~/.config/zacos9/gameplayer/mupen64plus/`.
-5. **Save states** (RetroArch systems) are kept in `~/Games/Saved Games` and
+5. **Leaving full screen:** press **F12** (a ZacOS shortcut that works for every
+   engine) to drop out of full screen and reach The Collar. RetroArch also
+   answers **F11**; mednafen **Alt+Enter**; mupen64plus **F11**.
+6. **Save states** (RetroArch systems) are kept in `~/Games/Saved Games` and
    are saved automatically when a game is quit.
 
 While a game runs, the **Game Player** module appears in The Collar. Its
