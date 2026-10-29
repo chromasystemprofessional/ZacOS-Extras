@@ -218,6 +218,7 @@ Launch gameplayer::buildLaunch(System system, const QString &file, const QString
 		l.args << launchFile(System::Ps1, file);
 		l.env << ("MEDNAFEN_HOME=" + configDir + "/mednafen");
 		l.env << "SDL_VIDEODRIVER=x11";
+		l.env << "SDL_AUDIODRIVER=pulse";
 		break;
 	}
 	case System::N64: {
@@ -236,6 +237,7 @@ Launch gameplayer::buildLaunch(System system, const QString &file, const QString
 			<< "--rsp" << (mupenPluginDir() + "/mupen64plus-rsp-hle.so")
 			<< file;
 		l.env << "SDL_VIDEODRIVER=x11";
+		l.env << "SDL_AUDIODRIVER=pulse";
 		break;
 	}
 	case System::None:
@@ -285,6 +287,8 @@ QString gameplayer::retroarchConfig(const QString &saveDir, bool fullscreen) {
 		"savestate_directory = \"%1\"\n"
 		"savefile_directory = \"%1\"\n"
 		"video_fullscreen = \"%2\"\n"
+		"audio_enable = \"true\"\n"
+		"audio_volume = \"1.0\"\n"
 		"network_cmd_enable = \"true\"\n"
 		"network_cmd_port = \"55355\"\n").arg(saveDir).arg(fullscreen ? "true" : "false");
 }
@@ -295,5 +299,7 @@ QString gameplayer::mednafenConfig(bool fullscreen) {
 		"; firmware folder beside this file.\n"
 		"video.fs %1\n"
 		"autosave 1\n"
-		"load_state 1\n").arg(fullscreen ? 1 : 0);
+		"load_state 1\n"
+		"sound.driver sdl\n"
+		"sound.volume 1\n").arg(fullscreen ? 1 : 0);
 }
