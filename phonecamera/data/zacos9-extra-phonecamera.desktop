@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Phone Camera
-Comment=Use an Android phone as a webcam
-Exec=zacos9-extra-phonecamera
-Icon=camera
-Categories=AudioVideo;
