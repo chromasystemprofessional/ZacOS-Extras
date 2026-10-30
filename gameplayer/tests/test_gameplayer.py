@@ -92,6 +92,7 @@ env["XDG_CONFIG_HOME"] = config
 env["ZACOS9_COLLAR_EXTENSION_PREFIX"] = PREFIX
 env["ZACOS9_GAMEPLAYER_CORES"] = os.path.join(tmp, "cores")
 os.makedirs(env["ZACOS9_GAMEPLAYER_CORES"])
+env["ZACOS9_GAMEPLAYER_CONTROLLERS"] = "Test Pad"
 # Fake core directory with a dummy core so buildLaunch finds it.
 with open(os.path.join(env["ZACOS9_GAMEPLAYER_CORES"], "nestopia_libretro.so"), "wb"):
     pass
@@ -178,6 +179,8 @@ try:
     check(m is not None and str(m["id"]) == "gameplayer", "the module is Game Player")
     check(m is not None and "Quit Game" in [str(x[1]) for x in menu()],
           "the module offers Quit Game")
+    check(m is not None and any("Test Pad" in str(x[1]) for x in menu()),
+          "the module reports the auto-detected controller")
     check(item("quit") is not None, "Quit Game is an action item")
     # Quitting stops the engine and the program.
     err = activate("quit")

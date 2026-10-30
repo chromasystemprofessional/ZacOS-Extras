@@ -44,6 +44,10 @@ Launch buildLaunch(System system, const QString &file, const QString &configDir,
 /* Write the engine config files (RetroArch, mednafen, mupen64plus). */
 bool ensureConfigs(const QString &configDir, bool fullscreen);
 
+/* Game controllers (joysticks/gamepads) currently connected, auto-detected.
+ * Names come from SDL2; ZACOS9_GAMEPLAYER_CONTROLLERS (comma-separated)
+ * overrides the list, for testing and for hand-picking. */
+QStringList detectedControllers();
 /* The RetroArch config written on first run, with absolute save paths. */
 QString retroarchConfig(const QString &saveDir, bool fullscreen);
 

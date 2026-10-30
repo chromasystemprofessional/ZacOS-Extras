@@ -1,6 +1,7 @@
+sdl2_dep = dependency('sdl2')
 gameplayer_exe = executable('zacos9-gameplayer',
   'src/main.cpp', 'src/gameplayer.cpp', 'src/gamemodule.cpp',
-  dependencies: collarextension_dep,
+  dependencies: [collarextension_dep, sdl2_dep],
   install: true,
   install_tag: 'gameplayer',
 )

@@ -1,8 +1,6 @@
 #include "gamemodule.h"
 
-#include <QDir>
 #include <QImage>
-#include <QUdpSocket>
 
 /* 16 x 16: a game cartridge, drawn the way The Collar's other modules draw
  * their icons. */
@@ -42,16 +40,9 @@ static QImage moduleIcon() {
 	return image;
 }
 
-static bool isRetroArchSystem(gameplayer::System s) {
-	return s == gameplayer::System::Nes || s == gameplayer::System::Snes ||
-		s == gameplayer::System::Sega || s == gameplayer::System::GameBoy ||
-		s == gameplayer::System::Gba;
-}
-
 GameModule::GameModule(CollarExtensionService *service, const QString &game,
-		gameplayer::System system, QProcess *engine, QObject *parent)
-	: QObject(parent), m_service(service), m_game(game), m_system(system),
-	  m_engine(engine) {
+		const QString &system, QProcess *engine, QObject *parent)
+	: QObject(parent), m_service(service), m_game(game), m_system(system), m_engine(engine) {
 	m_service->modules = [this] { return QList<CollarModule>{ module() }; };
 	m_service->activate = [this](const QString &, const QString &item, Done done) {
 		activate(item, std::move(done));
@@ -63,6 +54,20 @@ GameModule::GameModule(CollarExtensionService *service, const QString &game,
 			m_engine->kill();
 		}
 	});
+	refreshControllers();
+	m_refresh.setInterval(5000);
+	connect(&m_refresh, &QTimer::timeout, this, [this] {
+		const QStringList now = gameplayer::detectedControllers();
+		if (now != m_controllers) {
+			m_controllers = now;
+			m_service->changed();
+		}
+	});
+	m_refresh.start();
+}
+
+void GameModule::refreshControllers() {
+	m_controllers = gameplayer::detectedControllers();
 }
 
 CollarModule GameModule::module() const {
@@ -70,41 +75,31 @@ CollarModule GameModule::module() const {
 	m.id = "gameplayer";
 	m.label = "Game Player";
 	m.active = true;
-	m.description = m_game.isEmpty() ? QString("Playing a game")
-		: (m_game + " (" + gameplayer::systemName(m_system) + ")");
+	m.description = m_system.isEmpty() ? m_game : (m_game + " (" + m_system + ")");
 	m.icon = moduleIcon();
-	m.menu << CollarMenuItem::text(m_game.isEmpty() ? "Playing a game" : m_game)
-		<< CollarMenuItem::text(gameplayer::systemName(m_system))
-		<< CollarMenuItem::separator()
-		<< CollarMenuItem::action("save", "Save State")
-		<< CollarMenuItem::action("load", "Load State")
-		<< CollarMenuItem::action("opensaves", "Open Saves Folder")
-		<< CollarMenuItem::separator()
+	m.menu << CollarMenuItem::text(m_game.isEmpty() ? "Playing a game" : m_game);
+	if (!m_system.isEmpty()) {
+		m.menu << CollarMenuItem::text(m_system);
+	}
+	m.menu << CollarMenuItem::separator();
+	if (m_controllers.isEmpty()) {
+		m.menu << CollarMenuItem::text("Controller: none detected");
+	} else {
+		m.menu << CollarMenuItem::text("Controllers");
+		for (const QString &c : m_controllers) {
+			m.menu << CollarMenuItem::text("  " + c);
+		}
+	}
+	m.menu << CollarMenuItem::separator()
 		<< CollarMenuItem::action("quit", "Quit Game");
 	return m;
 }
 
 void GameModule::activate(const QString &item, Done done) {
-	if (item == "save") {
-		if (isRetroArchSystem(m_system)) {
-			QUdpSocket sock;
-			sock.writeDatagram("SAVE_STATE", QHostAddress("127.0.0.1"), 55355);
-			sock.flush();
-		}
-		done(QString());
-	} else if (item == "load") {
-		if (isRetroArchSystem(m_system)) {
-			QUdpSocket sock;
-			sock.writeDatagram("LOAD_STATE", QHostAddress("127.0.0.1"), 55355);
-			sock.flush();
-		}
-		done(QString());
-	} else if (item == "opensaves") {
-		const QString saveDir = QDir::homePath() + "/Games/Saved Games";
-		QDir().mkpath(saveDir);
-		QProcess::startDetached("xdg-open", QStringList() << saveDir);
-		done(QString());
-	} else if (item == "quit") {
+	if (item == "quit") {
+		/* Terminate the engine; if it ignores that, finish it off. The program
+		 * quits through the engine's finished signal, so progress saved on exit
+		 * (RetroArch's auto-save) has a chance to be written. */
 		if (m_engine && m_engine->state() != QProcess::NotRunning) {
 			m_engine->terminate();
 			m_kill.start();

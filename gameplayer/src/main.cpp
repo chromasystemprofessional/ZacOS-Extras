@@ -61,6 +61,9 @@ static int checkGame(const QString &file) {
 	for (const QString &e : launch.env) {
 		printf("env: %s\n", qPrintable(e));
 	}
+	for (const QString &c : detectedControllers()) {
+		printf("controller: %s\n", qPrintable(c));
+	}
 	return 0;
 }
 
