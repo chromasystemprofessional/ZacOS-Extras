@@ -43,8 +43,8 @@ static QImage moduleIcon() {
 }
 
 GameModule::GameModule(CollarExtensionService *service, const QString &game,
-		gameplayer::System system, QProcess *engine, QObject *parent)
-	: QObject(parent), m_service(service), m_game(game), m_system(system), m_engine(engine) {
+		gameplayer::System system, bool fullscreen, QProcess *engine, QObject *parent)
+	: QObject(parent), m_service(service), m_game(game), m_system(system), m_fullscreen(fullscreen), m_engine(engine) {
 	m_service->modules = [this] { return QList<CollarModule>{ module() }; };
 	m_service->activate = [this](const QString &, const QString &item, Done done) {
 		activate(item, std::move(done));
@@ -97,6 +97,7 @@ CollarModule GameModule::module() const {
 		}
 	}
 	m.menu << CollarMenuItem::separator()
+		<< CollarMenuItem::action("fullscreen", "Fullscreen", true, m_fullscreen)
 		<< CollarMenuItem::action("configure", "Configure Controller...")
 		<< CollarMenuItem::separator()
 		<< CollarMenuItem::action("quit", "Quit Game");
@@ -104,6 +105,16 @@ CollarModule GameModule::module() const {
 }
 
 void GameModule::activate(const QString &item, Done done) {
+	if (item == "fullscreen") {
+		m_fullscreen = !m_fullscreen;
+		if (fullscreenChanged) {
+			fullscreenChanged(m_fullscreen);
+		}
+		m_restartRequested = true;
+		m_service->changed();
+		done(QString());
+		return;
+	}
 	if (item == "configure") {
 		const bool ok = QProcess::startDetached(QCoreApplication::applicationFilePath(),
 			QStringList() << "--configure-controller");
@@ -111,6 +122,7 @@ void GameModule::activate(const QString &item, Done done) {
 		return;
 	}
 	if (item == "quit") {
+		m_quitRequested = true;
 		/* Terminate the engine; if it ignores that, finish it off. The program
 		 * quits through the engine's finished signal, so progress saved on exit
 		 * (RetroArch's auto-save) has a chance to be written. */

@@ -48,6 +48,12 @@ static bool readFullscreen() {
 	return s.value("fullscreen", false).toBool();
 }
 
+static void writeFullscreen(bool v) {
+	QSettings s(configDir() + "/gameplayer.conf", QSettings::IniFormat);
+	s.setValue("fullscreen", v);
+	s.sync();
+}
+
 static int checkGame(const QString &file) {
 	const System sys = detectSystem(file);
 	printf("system: %s\n", qPrintable(systemName(sys)));
@@ -106,7 +112,8 @@ static int playGame(const QString &file) {
 	}
 
 	QProcess engine;
-	GameModule module(&service, game, sys, &engine);
+	GameModule module(&service, game, sys, fullscreen, &engine);
+	module.fullscreenChanged = [](bool v) { writeFullscreen(v); };
 	service.changed();
 
 	engine.setProgram(launch.program);
@@ -144,8 +151,17 @@ static int playGame(const QString &file) {
 			QCoreApplication::exit(2);
 		}
 	});
-	QObject::connect(&engine, &QProcess::finished, qApp, []() {
-		QCoreApplication::quit();
+	QObject::connect(&engine, &QProcess::finished, qApp, [&]() {
+		if (module.restartRequested()) {
+			writeFullscreen(module.fullscreen());
+			QProcess::startDetached(QCoreApplication::applicationFilePath(),
+				QStringList() << "--play" << file);
+			QCoreApplication::quit();
+		} else if (module.quitRequested()) {
+			QCoreApplication::quit();
+		} else {
+			QCoreApplication::quit();
+		}
 	});
 
 	engine.start();
