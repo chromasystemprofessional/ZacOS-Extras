@@ -21,6 +21,9 @@
 #include "gamemodule.h"
 
 #include <SDL2/SDL.h>
+#include <linux/joystick.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 using namespace gameplayer;
 
@@ -195,39 +198,30 @@ static int configureController(int argc, char **argv) {
 		QCoreApplication::processEvents();
 		bool got = false;
 		Uint32 start = SDL_GetTicks();
-		const int nButtons = SDL_JoystickNumButtons(joy);
-		const int nHats = SDL_JoystickNumHats(joy);
+		int fd = open("/dev/input/js0", O_RDONLY | O_NONBLOCK);
+		// Drain any pending events first.
+		if (fd >= 0) {
+			struct js_event drain;
+			while (read(fd, &drain, sizeof(drain)) == sizeof(drain)) {}
+		}
 		while (!got && SDL_GetTicks() - start < 10000) {
 			QCoreApplication::processEvents();
-			SDL_JoystickUpdate();
-			for (int b = 0; b < nButtons; ++b) {
-				const QString key = QString("b%1").arg(b);
-				if (SDL_JoystickGetButton(joy, b) && !used.contains(key)) {
-					mapping.insert(sdlNames[i], QString("b%1").arg(b));
-					used.insert(key);
-					got = true;
-					break;
-				}
-			}
-			// D-pad may be a hat instead of buttons.
-			for (int h = 0; h < nHats && !got; ++h) {
-				const Uint8 hat = SDL_JoystickGetHat(joy, h);
-				QString dir;
-				if (hat & SDL_HAT_UP) dir = "up";
-				else if (hat & SDL_HAT_DOWN) dir = "down";
-				else if (hat & SDL_HAT_LEFT) dir = "left";
-				else if (hat & SDL_HAT_RIGHT) dir = "right";
-				if (!dir.isEmpty() && sdlNames[i].startsWith("dp") && !used.contains(QString("h%1.%2").arg(h).arg(dir))) {
-					const QString sdlDir = sdlNames[i].mid(2); // up/down/left/right
-					if (dir == sdlDir) {
-						mapping.insert(sdlNames[i], QString("h%1.%2").arg(h).arg(dir == "up" ? 1 : dir == "down" ? 4 : dir == "left" ? 8 : 2));
-						used.insert(QString("h%1").arg(h));
-						got = true;
+			if (fd >= 0) {
+				struct js_event e;
+				while (read(fd, &e, sizeof(e)) == sizeof(e)) {
+					if ((e.type & ~JS_EVENT_INIT) == JS_EVENT_BUTTON && e.value == 1) {
+						const QString key = QString("b%1").arg(e.number);
+						if (!used.contains(key)) {
+							mapping.insert(sdlNames[i], key);
+							used.insert(key);
+							got = true;
+						}
 					}
 				}
 			}
 			SDL_Delay(10);
 		}
+		if (fd >= 0) close(fd);
 		box.close();
 		if (!got) {
 			QMessageBox::warning(nullptr, "Game Player",
