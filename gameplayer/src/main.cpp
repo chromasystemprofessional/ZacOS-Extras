@@ -167,6 +167,7 @@ static int configureController(int argc, char **argv) {
 		return 0;
 	}
 	const int index = 0;
+	fprintf(stderr, "isGameController(0)=%d numJoysticks=%d\n", SDL_IsGameController(index), SDL_NumJoysticks());
 	SDL_Joystick *joy = SDL_JoystickOpen(index);
 	if (!joy) {
 		QMessageBox::critical(nullptr, "Game Player", "Couldn't open the controller.");
@@ -192,13 +193,14 @@ static int configureController(int argc, char **argv) {
 		box.exec();
 		bool got = false;
 		Uint32 start = SDL_GetTicks();
+		const int nButtons = SDL_JoystickNumButtons(joy);
 		while (!got && SDL_GetTicks() - start < 10000) {
-			SDL_Event e;
-			while (SDL_PollEvent(&e)) {
-				if (e.type == SDL_JOYBUTTONDOWN && !used.contains(e.jbutton.button)) {
-					mapping.insert(sdlNames[i], e.jbutton.button);
-					used.insert(e.jbutton.button);
+			for (int b = 0; b < nButtons; ++b) {
+				if (SDL_JoystickGetButton(joy, b) && !used.contains(b)) {
+					mapping.insert(sdlNames[i], b);
+					used.insert(b);
 					got = true;
+					break;
 				}
 			}
 			SDL_Delay(10);
