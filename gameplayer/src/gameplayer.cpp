@@ -377,6 +377,19 @@ QStringList gameplayer::controllerMappings() {
 		return maps;
 	}
 	QStringList maps;
+	// Saved mappings from a previous --configure-controller run.
+	const QString cfg = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) +
+		"/zacos9/gameplayer/controller_mappings.txt";
+	QFile saved(cfg);
+	if (saved.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		while (!saved.atEnd()) {
+			const QString line = QString::fromUtf8(saved.readLine()).trimmed();
+			if (!line.isEmpty()) {
+				maps << line;
+			}
+		}
+		saved.close();
+	}
 	if (SDL_Init(SDL_INIT_GAMECONTROLLER) == 0) {
 		const int n = SDL_NumJoysticks();
 		for (int i = 0; i < n; ++i) {

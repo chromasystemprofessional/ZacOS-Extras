@@ -6,6 +6,10 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QProcessEnvironment>
+#include <QSet>
+#include <QMap>
+#include <QDir>
+#include <QFile>
 #include <QSettings>
 #include <QStandardPaths>
 #include <cstdio>
@@ -15,6 +19,8 @@
 #include "collarextension.h"
 #include "gameplayer.h"
 #include "gamemodule.h"
+
+#include <SDL2/SDL.h>
 
 using namespace gameplayer;
 
@@ -143,6 +149,81 @@ static int playGame(const QString &file) {
 	return qApp->exec();
 }
 
+static int configureController(int argc, char **argv) {
+	QApplication app(argc, argv);
+	app.setApplicationName("zacos9-gameplayer");
+
+	if (SDL_Init(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) != 0) {
+		QMessageBox::critical(nullptr, "Game Player", "SDL couldn't start: " + QString::fromUtf8(SDL_GetError()));
+		return 1;
+	}
+	if (SDL_NumJoysticks() == 0) {
+		QMessageBox::information(nullptr, "Game Player", "No game controller is connected.");
+		SDL_Quit();
+		return 0;
+	}
+	const int index = 0;
+	SDL_Joystick *joy = SDL_JoystickOpen(index);
+	if (!joy) {
+		QMessageBox::critical(nullptr, "Game Player", "Couldn't open the controller.");
+		SDL_Quit();
+		return 1;
+	}
+	char guidStr[33];
+	SDL_JoystickGetGUIDString(SDL_JoystickGetGUID(joy), guidStr, sizeof(guidStr));
+	const QString guid = QString::fromUtf8(guidStr);
+	const QString name = QString::fromUtf8(SDL_JoystickName(joy));
+
+	const QStringList labels = { "D-pad up", "D-pad down", "D-pad left", "D-pad right",
+		"A", "B", "X", "Y", "Left shoulder", "Right shoulder", "Start", "Select" };
+	const QStringList sdlNames = { "dpup", "dpdown", "dpleft", "dpright",
+		"a", "b", "x", "y", "leftshoulder", "rightshoulder", "start", "back" };
+
+	QSet<int> used;
+	QMap<QString, int> mapping;
+	for (int i = 0; i < labels.size(); ++i) {
+		QMessageBox::information(nullptr, "Game Player",
+			QString("Press %1 on \"%2\".").arg(labels[i], name));
+		bool got = false;
+		Uint32 start = SDL_GetTicks();
+		while (!got && SDL_GetTicks() - start < 10000) {
+			SDL_Event e;
+			while (SDL_PollEvent(&e)) {
+				if (e.type == SDL_JOYBUTTONDOWN && !used.contains(e.jbutton.button)) {
+					mapping.insert(sdlNames[i], e.jbutton.button);
+					used.insert(e.jbutton.button);
+					got = true;
+				}
+			}
+			SDL_Delay(10);
+		}
+		if (!got) {
+			QMessageBox::warning(nullptr, "Game Player",
+				QString("Timed out waiting for %1; it won't be mapped.").arg(labels[i]));
+		}
+	}
+
+	QStringList parts;
+	for (auto it = mapping.begin(); it != mapping.end(); ++it) {
+		parts << QString("%1:b%2").arg(it.key()).arg(it.value());
+	}
+	const QString mappingStr = guid + "," + name + "," + parts.join(",") + ",";
+
+	QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/zacos9/gameplayer");
+	QFile f(QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/zacos9/gameplayer/controller_mappings.txt");
+	if (f.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+		f.write((mappingStr + "\n").toUtf8());
+		f.close();
+	}
+
+	SDL_JoystickClose(joy);
+	SDL_Quit();
+
+	QMessageBox::information(nullptr, "Game Player",
+		"Controller configured. Its mapping was saved; it will be used the next time you play.");
+	return 0;
+}
+
 int main(int argc, char **argv) {
 	QApplication app(argc, argv);
 	app.setApplicationName("zacos9-gameplayer");
@@ -152,6 +233,9 @@ int main(int argc, char **argv) {
 			"Game Player plays console games. Put a game in your Games folder and\n"
 			"double-click it, or drag a cartridge or disc onto this program.");
 		return 0;
+	}
+	if (std::strcmp(argv[1], "--configure-controller") == 0) {
+		return configureController(argc, argv);
 	}
 	if (std::strcmp(argv[1], "--check") == 0 && argc >= 3) {
 		return checkGame(QString::fromLocal8Bit(argv[2]));

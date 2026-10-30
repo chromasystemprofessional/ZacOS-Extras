@@ -1,6 +1,8 @@
 #include "gamemodule.h"
 
 #include <QImage>
+#include <QProcess>
+#include <QCoreApplication>
 
 /* 16 x 16: a game cartridge, drawn the way The Collar's other modules draw
  * their icons. */
@@ -95,11 +97,19 @@ CollarModule GameModule::module() const {
 		}
 	}
 	m.menu << CollarMenuItem::separator()
+		<< CollarMenuItem::action("configure", "Configure Controller...")
+		<< CollarMenuItem::separator()
 		<< CollarMenuItem::action("quit", "Quit Game");
 	return m;
 }
 
 void GameModule::activate(const QString &item, Done done) {
+	if (item == "configure") {
+		QProcess::startDetached(QCoreApplication::applicationFilePath(),
+			QStringList() << "--configure-controller");
+		done(QString());
+		return;
+	}
 	if (item == "quit") {
 		/* Terminate the engine; if it ignores that, finish it off. The program
 		 * quits through the engine's finished signal, so progress saved on exit
