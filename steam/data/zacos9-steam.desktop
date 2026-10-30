@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Steam
+Comment=Steam games in The Collar
+Exec=zacos9-steam
+Terminal=false
+Categories=Game;
+OnlyShowIn=ZacOS9;
+X-GNOME-Autostart-enabled=true
