@@ -190,12 +190,15 @@ static int configureController(int argc, char **argv) {
 		QMessageBox box(QMessageBox::Information, "Game Player",
 			QString("Press %1 on \"%2\".").arg(labels[i], name));
 		box.setWindowFlags(box.windowFlags() | Qt::WindowStaysOnTopHint);
-		box.exec();
+		box.setStandardButtons(QMessageBox::Cancel);
+		box.show();
+		QCoreApplication::processEvents();
 		bool got = false;
 		Uint32 start = SDL_GetTicks();
 		const int nButtons = SDL_JoystickNumButtons(joy);
 		const int nHats = SDL_JoystickNumHats(joy);
 		while (!got && SDL_GetTicks() - start < 10000) {
+			QCoreApplication::processEvents();
 			SDL_JoystickUpdate();
 			for (int b = 0; b < nButtons; ++b) {
 				const QString key = QString("b%1").arg(b);
@@ -225,6 +228,7 @@ static int configureController(int argc, char **argv) {
 			}
 			SDL_Delay(10);
 		}
+		box.close();
 		if (!got) {
 			QMessageBox::warning(nullptr, "Game Player",
 				QString("Timed out waiting for %1; it won't be mapped.").arg(labels[i]));
