@@ -206,6 +206,11 @@ static int configureController(int argc, char **argv) {
 		}
 		while (!got && SDL_GetTicks() - start < 10000) {
 			QCoreApplication::processEvents();
+			// Also pump SDL events and log them for debugging.
+			SDL_Event se;
+			while (SDL_PollEvent(&se)) {
+				fprintf(stderr, "SDL event type=%d\n", se.type);
+			}
 			if (fd >= 0) {
 				struct js_event e;
 				while (read(fd, &e, sizeof(e)) == sizeof(e)) {
