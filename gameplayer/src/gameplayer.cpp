@@ -281,6 +281,10 @@ Launch gameplayer::buildLaunch(System system, const QString &file, const QString
 		}
 		return l;
 	}
+	const QStringList mappings = controllerMappings();
+	if (!mappings.isEmpty()) {
+		l.env << ("SDL_GAMECONTROLLERCONFIG=" + mappings.join("\n"));
+	}
 	if (!executableOnPath(l.program)) {
 		if (error) {
 			*error = QString("Game Player needs %1, but it isn't installed.").arg(l.program);
@@ -360,6 +364,34 @@ QString gameplayer::mednafenConfig(bool fullscreen) {
 		"sound.volume 1\n").arg(fullscreen ? 1 : 0);
 }
 
+
+QStringList gameplayer::controllerMappings() {
+	if (qEnvironmentVariableIsSet("ZACOS9_GAMEPLAYER_CONTROLLER_MAPPINGS")) {
+		QStringList maps;
+		for (const QByteArray &m : qgetenv("ZACOS9_GAMEPLAYER_CONTROLLER_MAPPINGS").split('\n')) {
+			const QString s = QString::fromUtf8(m).trimmed();
+			if (!s.isEmpty()) {
+				maps << s;
+			}
+		}
+		return maps;
+	}
+	QStringList maps;
+	if (SDL_Init(SDL_INIT_GAMECONTROLLER) == 0) {
+		const int n = SDL_NumJoysticks();
+		for (int i = 0; i < n; ++i) {
+			if (SDL_IsGameController(i)) {
+				char *mapping = SDL_GameControllerMappingForDeviceIndex(i);
+				if (mapping) {
+					maps << QString::fromUtf8(mapping);
+					SDL_free(mapping);
+				}
+			}
+		}
+		SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
+	}
+	return maps;
+}
 
 QStringList gameplayer::detectedControllers() {
 	if (qEnvironmentVariableIsSet("ZACOS9_GAMEPLAYER_CONTROLLERS")) {

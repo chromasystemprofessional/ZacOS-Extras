@@ -83,12 +83,15 @@ CollarModule GameModule::module() const {
 		m.menu << CollarMenuItem::text(sysName);
 	}
 	m.menu << CollarMenuItem::separator();
+	const QStringList maps = gameplayer::controllerMappings();
 	if (m_controllers.isEmpty()) {
 		m.menu << CollarMenuItem::text("Controller: none detected");
 	} else {
 		m.menu << CollarMenuItem::text("Controllers");
-		for (const QString &c : m_controllers) {
-			m.menu << CollarMenuItem::text("  " + c);
+		for (int i = 0; i < m_controllers.size(); ++i) {
+			const bool configured = i < maps.size();
+			m.menu << CollarMenuItem::text("  " + m_controllers.at(i) +
+				(configured ? " (configured)" : " (detected)"));
 		}
 	}
 	m.menu << CollarMenuItem::separator()

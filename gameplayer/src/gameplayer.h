@@ -48,6 +48,11 @@ bool ensureConfigs(const QString &configDir, bool fullscreen);
  * Names come from SDL2; ZACOS9_GAMEPLAYER_CONTROLLERS (comma-separated)
  * overrides the list, for testing and for hand-picking. */
 QStringList detectedControllers();
+
+/* SDL game-controller mapping strings for the detected controllers, so the
+ * engines receive a button layout instead of a bare joystick. Empty when a
+ * controller isn't in SDL's database (it then needs manual configuration). */
+QStringList controllerMappings();
 /* The RetroArch config written on first run, with absolute save paths. */
 QString retroarchConfig(const QString &saveDir, bool fullscreen);
 
