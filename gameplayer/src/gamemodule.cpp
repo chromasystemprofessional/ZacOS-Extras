@@ -41,7 +41,7 @@ static QImage moduleIcon() {
 }
 
 GameModule::GameModule(CollarExtensionService *service, const QString &game,
-		const QString &system, QProcess *engine, QObject *parent)
+		gameplayer::System system, QProcess *engine, QObject *parent)
 	: QObject(parent), m_service(service), m_game(game), m_system(system), m_engine(engine) {
 	m_service->modules = [this] { return QList<CollarModule>{ module() }; };
 	m_service->activate = [this](const QString &, const QString &item, Done done) {
@@ -75,11 +75,12 @@ CollarModule GameModule::module() const {
 	m.id = "gameplayer";
 	m.label = "Game Player";
 	m.active = true;
-	m.description = m_system.isEmpty() ? m_game : (m_game + " (" + m_system + ")");
+	const QString sysName = gameplayer::systemName(m_system);
+	m.description = (sysName.isEmpty() || sysName == "unknown") ? m_game : (m_game + " (" + sysName + ")");
 	m.icon = moduleIcon();
 	m.menu << CollarMenuItem::text(m_game.isEmpty() ? "Playing a game" : m_game);
-	if (!m_system.isEmpty()) {
-		m.menu << CollarMenuItem::text(m_system);
+	if (!(sysName.isEmpty() || sysName == "unknown")) {
+		m.menu << CollarMenuItem::text(sysName);
 	}
 	m.menu << CollarMenuItem::separator();
 	if (m_controllers.isEmpty()) {

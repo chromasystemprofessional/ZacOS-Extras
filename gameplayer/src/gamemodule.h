@@ -22,7 +22,7 @@ public:
 	using Done = std::function<void(const QString &)>;
  
 	GameModule(CollarExtensionService *service, const QString &game,
-		const QString &system, QProcess *engine, QObject *parent = nullptr);
+		gameplayer::System system, QProcess *engine, QObject *parent = nullptr);
 
 	CollarModule module() const;
 	void activate(const QString &item, Done done);
@@ -30,7 +30,7 @@ public:
 private:
 	CollarExtensionService *m_service;
 	QString m_game;
-	QString m_system;
+	gameplayer::System m_system;
 	QProcess *m_engine;
 	QTimer m_kill;
 	QTimer m_refresh;
