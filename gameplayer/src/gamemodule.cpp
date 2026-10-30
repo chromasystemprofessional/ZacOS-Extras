@@ -3,6 +3,8 @@
 #include <QImage>
 #include <QProcess>
 #include <QCoreApplication>
+#include <QHostAddress>
+#include <QUdpSocket>
 
 /* 16 x 16: a game cartridge, drawn the way The Collar's other modules draw
  * their icons. */
@@ -110,7 +112,24 @@ void GameModule::activate(const QString &item, Done done) {
 		if (fullscreenChanged) {
 			fullscreenChanged(m_fullscreen);
 		}
+		const bool retro = (m_system == gameplayer::System::Nes || m_system == gameplayer::System::Snes ||
+			m_system == gameplayer::System::Sega || m_system == gameplayer::System::GameBoy ||
+			m_system == gameplayer::System::Gba);
+		if (retro) {
+			/* RetroArch: toggle instantly via its network command interface. */
+			QUdpSocket sock;
+			sock.writeDatagram("FULLSCREEN_TOGGLE",
+				QHostAddress("127.0.0.1"), 55355);
+			sock.flush();
+			m_service->changed();
+			done(QString());
+			return;
+		}
 		m_restartRequested = true;
+		if (m_engine && m_engine->state() != QProcess::NotRunning) {
+			m_engine->terminate();
+			m_kill.start();
+		}
 		m_service->changed();
 		done(QString());
 		return;
