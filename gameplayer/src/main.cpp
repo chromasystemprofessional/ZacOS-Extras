@@ -257,6 +257,8 @@ static int configureController(int argc, char **argv) {
 }
 
 int main(int argc, char **argv) {
+	FILE *f = fopen("/tmp/cfg.log", "w");
+	if (f) { fprintf(f, "main started argc=%d\n", argc); fclose(f); }
 	QApplication app(argc, argv);
 	app.setApplicationName("zacos9-gameplayer");
 
