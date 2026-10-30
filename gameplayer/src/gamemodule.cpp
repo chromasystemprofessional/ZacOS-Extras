@@ -105,9 +105,9 @@ CollarModule GameModule::module() const {
 
 void GameModule::activate(const QString &item, Done done) {
 	if (item == "configure") {
-		QProcess::startDetached(QCoreApplication::applicationFilePath(),
+		const bool ok = QProcess::startDetached(QCoreApplication::applicationFilePath(),
 			QStringList() << "--configure-controller");
-		done(QString());
+		done(ok ? QString() : "Couldn't start the controller configuration.");
 		return;
 	}
 	if (item == "quit") {

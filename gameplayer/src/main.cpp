@@ -150,12 +150,16 @@ static int playGame(const QString &file) {
 }
 
 static int configureController(int argc, char **argv) {
-	QApplication app(argc, argv);
-	app.setApplicationName("zacos9-gameplayer");
+	QApplication::setApplicationName("zacos9-gameplayer");
 
 	if (SDL_Init(SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) != 0) {
 		QMessageBox::critical(nullptr, "Game Player", "SDL couldn't start: " + QString::fromUtf8(SDL_GetError()));
 		return 1;
+	}
+	if (SDL_NumJoysticks() == 0) {
+		QMessageBox::information(nullptr, "Game Player", "No game controller is connected.");
+		SDL_Quit();
+		return 0;
 	}
 	if (SDL_NumJoysticks() == 0) {
 		QMessageBox::information(nullptr, "Game Player", "No game controller is connected.");
@@ -182,8 +186,10 @@ static int configureController(int argc, char **argv) {
 	QSet<int> used;
 	QMap<QString, int> mapping;
 	for (int i = 0; i < labels.size(); ++i) {
-		QMessageBox::information(nullptr, "Game Player",
+		QMessageBox box(QMessageBox::Information, "Game Player",
 			QString("Press %1 on \"%2\".").arg(labels[i], name));
+		box.setWindowFlags(box.windowFlags() | Qt::WindowStaysOnTopHint);
+		box.exec();
 		bool got = false;
 		Uint32 start = SDL_GetTicks();
 		while (!got && SDL_GetTicks() - start < 10000) {
