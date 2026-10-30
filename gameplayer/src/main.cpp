@@ -184,8 +184,8 @@ static int configureController(int argc, char **argv) {
 	const QStringList sdlNames = { "dpup", "dpdown", "dpleft", "dpright",
 		"a", "b", "x", "y", "leftshoulder", "rightshoulder", "start", "back" };
 
-	QSet<int> used;
-	QMap<QString, int> mapping;
+	QSet<QString> used;
+	QMap<QString, QString> mapping;
 	for (int i = 0; i < labels.size(); ++i) {
 		QMessageBox box(QMessageBox::Information, "Game Player",
 			QString("Press %1 on \"%2\".").arg(labels[i], name));
@@ -194,13 +194,33 @@ static int configureController(int argc, char **argv) {
 		bool got = false;
 		Uint32 start = SDL_GetTicks();
 		const int nButtons = SDL_JoystickNumButtons(joy);
+		const int nHats = SDL_JoystickNumHats(joy);
 		while (!got && SDL_GetTicks() - start < 10000) {
+			SDL_JoystickUpdate();
 			for (int b = 0; b < nButtons; ++b) {
-				if (SDL_JoystickGetButton(joy, b) && !used.contains(b)) {
-					mapping.insert(sdlNames[i], b);
-					used.insert(b);
+				const QString key = QString("b%1").arg(b);
+				if (SDL_JoystickGetButton(joy, b) && !used.contains(key)) {
+					mapping.insert(sdlNames[i], QString("b%1").arg(b));
+					used.insert(key);
 					got = true;
 					break;
+				}
+			}
+			// D-pad may be a hat instead of buttons.
+			for (int h = 0; h < nHats && !got; ++h) {
+				const Uint8 hat = SDL_JoystickGetHat(joy, h);
+				QString dir;
+				if (hat & SDL_HAT_UP) dir = "up";
+				else if (hat & SDL_HAT_DOWN) dir = "down";
+				else if (hat & SDL_HAT_LEFT) dir = "left";
+				else if (hat & SDL_HAT_RIGHT) dir = "right";
+				if (!dir.isEmpty() && sdlNames[i].startsWith("dp") && !used.contains(QString("h%1.%2").arg(h).arg(dir))) {
+					const QString sdlDir = sdlNames[i].mid(2); // up/down/left/right
+					if (dir == sdlDir) {
+						mapping.insert(sdlNames[i], QString("h%1.%2").arg(h).arg(dir == "up" ? 1 : dir == "down" ? 4 : dir == "left" ? 8 : 2));
+						used.insert(QString("h%1").arg(h));
+						got = true;
+					}
 				}
 			}
 			SDL_Delay(10);
@@ -213,7 +233,7 @@ static int configureController(int argc, char **argv) {
 
 	QStringList parts;
 	for (auto it = mapping.begin(); it != mapping.end(); ++it) {
-		parts << QString("%1:b%2").arg(it.key()).arg(it.value());
+		parts << QString("%1:%2").arg(it.key(), it.value());
 	}
 	const QString mappingStr = guid + "," + name + "," + parts.join(",") + ",";
 
