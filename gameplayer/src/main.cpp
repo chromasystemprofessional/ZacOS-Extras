@@ -209,7 +209,8 @@ static int configureController(int argc, char **argv) {
 			// Also pump SDL events and log them for debugging.
 			SDL_Event se;
 			while (SDL_PollEvent(&se)) {
-				fprintf(stderr, "SDL event type=%d\n", se.type);
+				FILE *f = fopen("/tmp/cfg.log", "a");
+				if (f) { fprintf(f, "SDL event type=%d\n", se.type); fclose(f); }
 			}
 			if (fd >= 0) {
 				struct js_event e;
