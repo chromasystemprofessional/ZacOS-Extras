@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Android Mirror (Scrcpy)
+Comment=Mirror an Android device's screen
+Exec=zacos9-scrcpy
+Terminal=false
+Categories=Utility;
+OnlyShowIn=ZacOS9;
+X-GNOME-Autostart-enabled=true
