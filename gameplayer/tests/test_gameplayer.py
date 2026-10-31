@@ -141,6 +141,21 @@ make_rom(tmp, "game.bin", b"\x00" * 1024)
 r = run_check(binary, cue, env)
 check("system: PlayStation" in r.stdout, "PlayStation: a cue sheet is detected")
 check("mednafen" in r.stdout, "PlayStation: uses mednafen")
+check("bios: needed" in r.stdout, "PlayStation: needs a BIOS")
+
+# PlayStation 2: an ISO disc image.
+ps2bin = os.path.join(tmp, "ps2bin")
+os.makedirs(ps2bin)
+with open(os.path.join(ps2bin, "pcsx2"), "w") as f:
+    f.write("#!/bin/sh\n")
+os.chmod(os.path.join(ps2bin, "pcsx2"), 0o755)
+env["PATH"] = ps2bin + ":" + env["PATH"]
+iso = make_rom(tmp, "game.iso", b"\x00" * 1024)
+r = run_check(binary, iso, env)
+check(r.returncode == 0, "PlayStation 2: --check succeeds")
+check("system: PlayStation 2" in r.stdout, "PlayStation 2: an ISO is detected")
+check("engine: pcsx2" in r.stdout, "PlayStation 2: uses pcsx2")
+check("bios: needed" in r.stdout, "PlayStation 2: needs a BIOS")
 
 n64 = make_rom(tmp, "game.n64")
 env["ZACOS9_MUPEN_CORELIB"] = "/usr/lib/x86_64-linux-gnu/libmupen64plus.so.2"

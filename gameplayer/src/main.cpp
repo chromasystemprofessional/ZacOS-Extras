@@ -34,8 +34,8 @@ static void usage() {
 		"  zacos9-gameplayer --check FILE\n"
 		"\n"
 		"FILE is a cartridge or disc image the Sniffer recognises (NES, Super NES,\n"
-		"Sega, Game Boy, Game Boy Advance, PlayStation or Nintendo 64). --check\n"
-		"prints what would run without starting anything.\n");
+		"Sega, Game Boy, Game Boy Advance, PlayStation, PlayStation 2 or\n"
+		"Nintendo 64). --check prints what would run without starting anything.\n");
 }
 
 static QString configDir() {
@@ -76,6 +76,8 @@ static int checkGame(const QString &file) {
 	for (const QString &e : launch.env) {
 		printf("env: %s\n", qPrintable(e));
 	}
+	const QString bios = biosInstructions(sys);
+	printf("bios: %s\n", bios.isEmpty() ? "ok" : "needed");
 	for (const QString &c : detectedControllers()) {
 		printf("controller: %s\n", qPrintable(c));
 	}
@@ -88,6 +90,11 @@ static int playGame(const QString &file) {
 		QMessageBox::critical(nullptr, "Game Player",
 			QString("“%1” isn't a game Game Player knows how to play.").arg(QFileInfo(file).fileName()));
 		return 2;
+	}
+	const QString bios = biosInstructions(sys);
+	if (!bios.isEmpty()) {
+		QMessageBox::information(nullptr, "Game Player", bios);
+		return 0;
 	}
 	const QString lf = launchFile(sys, file);
 	const QString game = QFileInfo(lf).completeBaseName();

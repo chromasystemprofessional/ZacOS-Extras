@@ -157,6 +157,41 @@ static QString mupenPluginDir() {
 	return "/usr/lib/x86_64-linux-gnu/mupen64plus";
 }
 
+/* The PS1 firmware folder mednafen reads (written by ensureConfigs). */
+static QString mednafenFirmwareDir() {
+	return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) +
+		"/zacos9/gameplayer/mednafen/firmware";
+}
+
+static bool mednafenBiosPresent() {
+	for (const char *name : { "scph5501.bin", "scph5502.bin", "scph5503.bin",
+			"scph1001.bin", "scph7001.bin" }) {
+		if (QFileInfo(mednafenFirmwareDir() + "/" + name).isFile()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/* PCSX2's BIOS folders (1.6 config dir, and 2.x data dir). */
+static QStringList pcsx2BiosDirs() {
+	const QString home = QDir::homePath();
+	return { home + "/.config/PCSX2/bios", home + "/.local/share/PCSX2/bios" };
+}
+
+static bool pcsx2BiosPresent() {
+	for (const QString &dir : pcsx2BiosDirs()) {
+		for (const QFileInfo &f : QDir(dir).entryInfoList(QDir::Files)) {
+			/* A PS2 BIOS is a multi-megabyte bin/rom; the smaller files in
+			 * the folder are save-state and config helpers. */
+			if (f.size() >= 1024 * 1024) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 } // namespace
 
 System gameplayer::detectSystem(const QString &path) {
@@ -195,6 +230,9 @@ System gameplayer::detectSystem(const QString &path) {
 	if (suffix == "bin") {
 		return siblingCue(info) ? System::Ps1 : System::None;
 	}
+	if (suffix == "iso" || suffix == "mdf") {
+		return System::Ps2;
+	}
 	return System::None;
 }
 
@@ -215,6 +253,7 @@ QString gameplayer::systemName(System system) {
 	case System::Nes: return "NES";
 	case System::Snes: return "Super NES";
 	case System::Ps1: return "PlayStation";
+	case System::Ps2: return "PlayStation 2";
 	case System::N64: return "Nintendo 64";
 	case System::Sega: return "Sega";
 	case System::GameBoy: return "Game Boy";
@@ -222,6 +261,30 @@ QString gameplayer::systemName(System system) {
 	case System::None: return "unknown";
 	}
 	return "unknown";
+}
+
+QString gameplayer::biosInstructions(System system) {
+	switch (system) {
+	case System::Ps1:
+		if (mednafenBiosPresent()) {
+			return QString();
+		}
+		return QString("PlayStation needs a Sony BIOS to run.\n\n"
+			"Copy these files from your own PlayStation into\n%1:\n"
+			"  scph5501.bin, scph5502.bin, scph5503.bin\n\n"
+			"(Other region files, like scph1001.bin, also work.)")
+			.arg(mednafenFirmwareDir());
+	case System::Ps2:
+		if (pcsx2BiosPresent()) {
+			return QString();
+		}
+		return QString("PlayStation 2 needs a PS2 BIOS to run.\n\n"
+			"Copy the BIOS file from your own PlayStation 2 into\n%1\n\n"
+			"PCSX2 finds it there the next time you start a game.")
+			.arg(pcsx2BiosDirs().first());
+	default:
+		return QString();
+	}
 }
 
 Launch gameplayer::buildLaunch(System system, const QString &file, const QString &configDir,
@@ -252,6 +315,13 @@ Launch gameplayer::buildLaunch(System system, const QString &file, const QString
 		l.program = "mednafen";
 		l.args << launchFile(System::Ps1, file);
 		l.env << ("MEDNAFEN_HOME=" + configDir + "/mednafen");
+		l.env << "SDL_VIDEODRIVER=x11";
+		l.env << "SDL_AUDIODRIVER=pulse";
+		break;
+	}
+	case System::Ps2: {
+		l.program = "pcsx2";
+		l.args << "--nogui" << (fullscreen ? "--fullscreen" : "--windowed") << file;
 		l.env << "SDL_VIDEODRIVER=x11";
 		l.env << "SDL_AUDIODRIVER=pulse";
 		break;

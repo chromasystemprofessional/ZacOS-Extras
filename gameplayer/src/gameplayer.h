@@ -15,7 +15,7 @@
 
 namespace gameplayer {
 
-enum class System { None, Nes, Snes, Ps1, N64, Sega, GameBoy, Gba };
+enum class System { None, Nes, Snes, Ps1, Ps2, N64, Sega, GameBoy, Gba };
 
 /* Which system a file belongs to, or None. An extension alone is not enough
  * where it is shared: a .md Markdown file is not a Sega cartridge and a bare
@@ -27,6 +27,11 @@ QString launchFile(System system, const QString &path);
 
 /* A human name for a system: "NES", "Super NES", "PlayStation", ... */
 QString systemName(System system);
+
+/* What to tell the user when a system needs a BIOS or firmware that isn't
+ * present; empty when the game runs without extra files (or the files are
+ * there). The caller shows this instead of launching. */
+QString biosInstructions(System system);
 
 /* One engine run: a program and its arguments. */
 struct Launch {
