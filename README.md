@@ -11,6 +11,7 @@ its public interfaces (D-Bus, settings files, XDG autostart).
 | `phone/` | **Phone**: KDE Connect and Syncthing for your phone: notifications, file sharing, clipboard and photo sync | [phone/README.md](phone/README.md) |
 | `nightmode/` | **Night Mode**: warmer screen colour for the evening, switched on and off from The Collar | [nightmode/README.md](nightmode/README.md) |
 | `gameplayer/` | **Game Player**: plays NES, Super NES, Sega, Game Boy, Game Boy Advance, PlayStation and Nintendo 64 cartridges and discs; double-click a game file, or launch from the Collar module while one runs | [gameplayer/README.md](gameplayer/README.md) |
+| `steam/` | **Steam games in The Collar**: lists the games installed by a native or Flatpak Steam and launches them through that Steam | — |
 | `common/` | `CollarExtensionService`, for any extra that adds Collar modules | [common/collarextension.h](common/collarextension.h) |
 
 ## Installing
