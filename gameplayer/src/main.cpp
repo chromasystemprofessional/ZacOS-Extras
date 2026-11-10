@@ -35,7 +35,11 @@ static void usage() {
 		"\n"
 		"FILE is a cartridge or disc image the Sniffer recognises (NES, Super NES,\n"
 		"Sega, Game Boy, Game Boy Advance, PlayStation, PlayStation 2 or\n"
-		"Nintendo 64). --check prints what would run without starting anything.\n");
+		"Nintendo 64). --check prints what would run without starting anything.\n"
+		"\n"
+		"Games go in ~/Games. A PlayStation BIOS (scph5500.bin, scph5501.bin or\n"
+		"scph5502.bin) or a 4 MB PlayStation 2 BIOS .bin dropped there is installed\n"
+		"where mednafen or PCSX2 needs it.\n");
 }
 
 static QString configDir() {
@@ -91,11 +95,6 @@ static int playGame(const QString &file) {
 			QString("“%1” isn't a game Game Player knows how to play.").arg(QFileInfo(file).fileName()));
 		return 2;
 	}
-	const QString bios = biosInstructions(sys);
-	if (!bios.isEmpty()) {
-		QMessageBox::information(nullptr, "Game Player", bios);
-		return 0;
-	}
 	const QString lf = launchFile(sys, file);
 	const QString game = QFileInfo(lf).completeBaseName();
 
@@ -114,8 +113,17 @@ static int playGame(const QString &file) {
 		return 2;
 	}
 	if (!ensureConfigs(configDir(), fullscreen)) {
-		QMessageBox::critical(nullptr, "Game Player", "Game Player couldn't write its settings.");
+		QMessageBox::critical(nullptr, "Game Player",
+			"Game Player couldn't prepare its folders and settings.");
 		return 2;
+	}
+	for (const QString &firmware : installDroppedFirmware(configDir())) {
+		fprintf(stderr, "zacos9-gameplayer: installed %s\n", qPrintable(firmware));
+	}
+	const QString bios = biosInstructions(sys);
+	if (!bios.isEmpty()) {
+		QMessageBox::information(nullptr, "Game Player", bios);
+		return 0;
 	}
 
 	QProcess engine;
@@ -286,15 +294,27 @@ int main(int argc, char **argv) {
 	app.setApplicationName("zacos9-gameplayer");
 
 	if (argc < 2) {
+		QString error;
+		if (!ensureGamesFolder(&error)) {
+			QMessageBox::critical(nullptr, "Game Player", error);
+			return 2;
+		}
+		installDroppedFirmware(configDir());
 		QMessageBox::information(nullptr, "Game Player",
-			"Game Player plays console games. Put a game in your Games folder and\n"
-			"double-click it, or drag a cartridge or disc onto this program.");
+			"Game Player plays console games. Put a game in ~/Games and\n"
+			"double-click it, or drag a cartridge or disc onto this program.\n\n"
+			"PlayStation and PlayStation 2 games need their BIOS. Drop its\n"
+			".bin file into ~/Games; Game Player installs it for you.");
 		return 0;
 	}
 	if (std::strcmp(argv[1], "--configure-controller") == 0) {
 		return configureController(argc, argv);
 	}
 	if (std::strcmp(argv[1], "--check") == 0 && argc >= 3) {
+		QString error;
+		if (!ensureGamesFolder(&error)) {
+			fprintf(stderr, "zacos9-gameplayer: %s\n", qPrintable(error));
+		}
 		return checkGame(QString::fromLocal8Bit(argv[2]));
 	}
 	if (std::strcmp(argv[1], "--play") == 0 && argc >= 3) {

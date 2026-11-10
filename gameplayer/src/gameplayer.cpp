@@ -1,10 +1,17 @@
 #include "gameplayer.h"
 
+#include <QBuffer>
+#include <QCryptographicHash>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QImage>
 #include <QProcessEnvironment>
+#include <QSaveFile>
 #include <QStandardPaths>
+
+#include <cstdio>
+#include <sys/xattr.h>
 
 #include <SDL2/SDL.h>
 
@@ -157,6 +164,24 @@ static QString mupenPluginDir() {
 	return "/usr/lib/x86_64-linux-gnu/mupen64plus";
 }
 
+/* Debian's PCSX2 binary is /usr/games/PCSX2; some builds and wrappers ship
+ * it as pcsx2. Prefer a real path, then PATH. */
+static QString pcsx2Program() {
+	for (const char *path : { "/usr/games/PCSX2", "/usr/bin/PCSX2",
+			"/usr/games/pcsx2", "/usr/bin/pcsx2" }) {
+		if (executableOnPath(path)) {
+			return QString::fromLatin1(path);
+		}
+	}
+	if (executableOnPath("PCSX2")) {
+		return "PCSX2";
+	}
+	if (executableOnPath("pcsx2")) {
+		return "pcsx2";
+	}
+	return "PCSX2";
+}
+
 /* The PS1 firmware folder mednafen reads (written by ensureConfigs). */
 static QString mednafenFirmwareDir() {
 	return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) +
@@ -192,7 +217,238 @@ static bool pcsx2BiosPresent() {
 	return false;
 }
 
+/* The folder icon the Finder puts on ~/Games: the Platinum folder with a
+ * cartridge on its face, 32 x 32 with on/off transparency like the desktop
+ * icons. */
+static QImage gamesFolderIcon() {
+	static const char *const art[32] = {
+		"................................",
+		"................................",
+		"................................",
+		"................................",
+		"................................",
+		".KKKKKKKKKKKK...................",
+		".KWWWWWWWWWWK...................",
+		".KWLLLLLLLLLK...................",
+		".KLLLLLLLLLLKKKKKKKKKKKKKKKKKKK.",
+		".KWWWWWWWWWWWWWWWWWWWWWWWWWWWWK.",
+		".KWLLLLLLLLLLLLLLLLLLLLLLLLLLMK.",
+		".KNNNNNNNNKKKKKKKKKKKKNNNNNNNMK.",
+		".KWWWWWWWWKPPPPPPPPPPKWWWWWWWWK.",
+		".KWLLLLLLLLKPGGGGGGGGGPKLLLLLMK.",
+		".KWLLLLLLLLKPGRRRRRRRGPKLLLLLMK.",
+		".KWLLLLLLLLKPGGGGGGGGGPKLLLLLMK.",
+		".KWLLLLLLLLKPGRRRRRRRGPKLLLLLMK.",
+		".KWLLLLLLLLKPGGGGGGGGGPKLLLLLMK.",
+		".KWLLLLLLLLKPPPPPPPPPPKLLLLLLMK.",
+		".KWLLLLLLLLKKPKPKPKPKPKKLLLLLMK.",
+		".KWLLLLLLLLLKKKKKKKKKKKLLLLLLMK.",
+		".KWLLLLLLLLLLLLLLLLLLLLLLLLLLMK.",
+		".KWLLLLLLLLLLLLLLLLLLLLLLLLLLMK.",
+		".KWLLLLLLLLLLLLLLLLLLLLLLLLLLMK.",
+		".KWLLLLLLLLLLLLLLLLLLLLLLLLLLMK.",
+		".KWLLLLLLLLLLLLLLLLLLLLLLLLLLMK.",
+		".KMMMMMMMMMMMMMMMMMMMMMMMMMMMMK.",
+		".KKKKKKKKKKKKKKKKKKKKKKKKKKKKKK.",
+		"................................",
+		"................................",
+		"................................",
+		"................................",
+	};
+	QImage image(32, 32, QImage::Format_ARGB32);
+	image.fill(Qt::transparent);
+	for (int y = 0; y < 32; ++y) {
+		for (int x = 0; x < 32; ++x) {
+			switch (art[y][x]) {
+			case 'K': image.setPixel(x, y, qRgb(0x00, 0x00, 0x00)); break;
+			case 'W': image.setPixel(x, y, qRgb(0xFF, 0xFF, 0xFF)); break;
+			case 'L': image.setPixel(x, y, qRgb(0xCC, 0xCC, 0xFF)); break;
+			case 'M': image.setPixel(x, y, qRgb(0x99, 0x99, 0xFF)); break;
+			case 'N': image.setPixel(x, y, qRgb(0x66, 0x66, 0xCC)); break;
+			case 'P': image.setPixel(x, y, qRgb(0x33, 0x33, 0x99)); break;
+			case 'G': image.setPixel(x, y, qRgb(0xDD, 0xDD, 0xDD)); break;
+			case 'R': image.setPixel(x, y, qRgb(0x66, 0x66, 0xCC)); break;
+			}
+		}
+	}
+	return image;
+}
+
+/* The Finder's custom-icon storage: a user.zacos9.custom-icon extended
+ * attribute on the item, or a hashed PNG under the user's data directory
+ * where the filesystem cannot hold one. The key and hash mirror
+ * customIconKey() in the Sniffer's shell/files/items.cpp. */
+static constexpr const char *CUSTOM_ICON_ATTR = "user.zacos9.custom-icon";
+
+static QString customIconKey(const QString &path) {
+	const QFileInfo info(path);
+	const QString canonical = info.canonicalFilePath();
+	return QStringLiteral("file:") + (canonical.isEmpty() ? info.absoluteFilePath() : canonical);
+}
+
+static QString customIconStorePath(const QString &path) {
+	const QByteArray hash = QCryptographicHash::hash(customIconKey(path).toUtf8(),
+		QCryptographicHash::Sha256).toHex();
+	return QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation) +
+		"/zacos9/custom-icons/" + QString::fromLatin1(hash) + ".png";
+}
+
+static bool hasCustomIcon(const QString &path) {
+	if (lgetxattr(QFile::encodeName(path).constData(), CUSTOM_ICON_ATTR,
+			nullptr, 0) >= 0) {
+		return true;
+	}
+	return QFileInfo::exists(customIconStorePath(path));
+}
+
+static bool writeCustomIcon(const QString &path, const QImage &image) {
+	QByteArray encoded;
+	QBuffer buffer(&encoded);
+	if (!buffer.open(QIODevice::WriteOnly) || !image.save(&buffer, "PNG") ||
+			encoded.isEmpty()) {
+		return false;
+	}
+	const QByteArray name = QFile::encodeName(path);
+	if (lsetxattr(name.constData(), CUSTOM_ICON_ATTR, encoded.constData(),
+			static_cast<size_t>(encoded.size()), 0) == 0) {
+		QFile::remove(customIconStorePath(path));
+		return true;
+	}
+	const QString store = customIconStorePath(path);
+	if (!QDir().mkpath(QFileInfo(store).absolutePath())) {
+		return false;
+	}
+	QSaveFile file(store);
+	return file.open(QIODevice::WriteOnly) && file.write(encoded) == encoded.size() &&
+		file.commit();
+}
+
 } // namespace
+
+QString gameplayer::gamesFolder() {
+	const QByteArray override = qgetenv("ZACOS9_GAMEPLAYER_GAMES");
+	if (!override.isEmpty()) {
+		return QString::fromLocal8Bit(override);
+	}
+	return QDir::homePath() + "/Games";
+}
+
+bool gameplayer::ensureGamesFolder(QString *error) {
+	const QString games = gamesFolder();
+	if (!QDir().mkpath(games)) {
+		if (error) {
+			*error = QString("Game Player couldn't create %1.").arg(games);
+		}
+		return false;
+	}
+	QDir().mkpath(games + "/Saved Games");
+	if (!hasCustomIcon(games) && !writeCustomIcon(games, gamesFolderIcon())) {
+		fprintf(stderr, "zacos9-gameplayer: couldn't give %s its folder icon.\n",
+			qPrintable(games));
+	}
+	return true;
+}
+
+QStringList gameplayer::installDroppedFirmware(const QString &configDir) {
+	static const QStringList firmwareNames = {
+		QStringLiteral("scph5500.bin"),
+		QStringLiteral("scph5501.bin"),
+		QStringLiteral("scph5502.bin"),
+	};
+	QStringList installed;
+	const QString games = gamesFolder();
+	const QString firmware = configDir + "/mednafen/firmware";
+	const auto removeDropped = [](const QString &path) {
+		if (!QFile::remove(path)) {
+			fprintf(stderr, "zacos9-gameplayer: couldn't remove %s after installing it.\n",
+				qPrintable(path));
+		}
+	};
+	/* Move the dropped file into place. Across filesystems, copy it and
+	 * remove the original; either way nothing is left in ~/Games. */
+	const auto moveIntoPlace = [&](const QString &source, const QString &target) {
+		if (!QFileInfo::exists(target)) {
+			if (!QFile::rename(source, target)) {
+				if (!QFile::copy(source, target)) {
+					return false;
+				}
+				removeDropped(source);
+			}
+		} else {
+			removeDropped(source);
+		}
+		return QFileInfo::exists(target);
+	};
+	const auto firmwareName = [&](const QFileInfo &file) -> QString {
+		const QString name = file.fileName().toLower();
+		if (firmwareNames.contains(name)) {
+			return name;
+		}
+		/* Recognise a BIOS the user renamed: the three SCPH images are
+		 * 512 KiB, and mednafen documents their SHA-256. */
+		if (file.suffix().compare(QLatin1String("bin"), Qt::CaseInsensitive) != 0 ||
+				file.size() != 512 * 1024) {
+			return {};
+		}
+		QFile f(file.absoluteFilePath());
+		if (!f.open(QIODevice::ReadOnly)) {
+			return {};
+		}
+		const QByteArray digest = QCryptographicHash::hash(f.readAll(),
+			QCryptographicHash::Sha256).toHex();
+		if (digest == "9c0421858e217805f4abe18698afea8d5aa36ff0727eb8484944e00eb5e7eadb") {
+			return QStringLiteral("scph5500.bin");
+		}
+		if (digest == "11052b6499e466bbf0a709b1f9cb6834a9418e66680387912451e971cf8a1fef") {
+			return QStringLiteral("scph5501.bin");
+		}
+		if (digest == "1faaa18fa820a0225e488d9f086296b8e6c46df739666093987ff7d8fd352c09") {
+			return QStringLiteral("scph5502.bin");
+		}
+		return {};
+	};
+	if (!QDir().mkpath(firmware)) {
+		return installed;
+	}
+	const QFileInfoList files = QDir(games).entryInfoList(
+		QDir::Files | QDir::NoDotAndDotDot, QDir::Name);
+	for (const QFileInfo &file : files) {
+		const QString name = firmwareName(file);
+		if (!name.isEmpty()) {
+			const QString target = firmware + "/" + name;
+			if (moveIntoPlace(file.absoluteFilePath(), target)) {
+				installed << target;
+			}
+			continue;
+		}
+		/* A PS2 BIOS is a 4 MB .bin and PCSX2 accepts it under any name.
+		 * Copy it to both the 1.6 config folder and the 2.x data folder,
+		 * then remove the dropped file from ~/Games. */
+		if (file.suffix().compare(QLatin1String("bin"), Qt::CaseInsensitive) == 0 &&
+				file.size() == 4 * 1024 * 1024) {
+			bool placedEverywhere = true;
+			for (const QString &dir : pcsx2BiosDirs()) {
+				if (!QDir().mkpath(dir)) {
+					placedEverywhere = false;
+					continue;
+				}
+				const QString target = dir + "/" + file.fileName();
+				if (QFileInfo::exists(target)) {
+					continue;
+				}
+				if (!QFile::copy(file.absoluteFilePath(), target)) {
+					placedEverywhere = false;
+					continue;
+				}
+				installed << target;
+			}
+			if (placedEverywhere) {
+				removeDropped(file.absoluteFilePath());
+			}
+		}
+	}
+	return installed;
+}
 
 System gameplayer::detectSystem(const QString &path) {
 	const QFileInfo info(path);
@@ -270,18 +526,18 @@ QString gameplayer::biosInstructions(System system) {
 			return QString();
 		}
 		return QString("PlayStation needs a Sony BIOS to run.\n\n"
-			"Copy these files from your own PlayStation into\n%1:\n"
-			"  scph5501.bin, scph5502.bin, scph5503.bin\n\n"
-			"(Other region files, like scph1001.bin, also work.)")
-			.arg(mednafenFirmwareDir());
+			"Drop scph5501.bin (North America), scph5502.bin (Europe) or\n"
+			"scph5500.bin (Japan) into ~/Games, then open the game again.\n\n"
+			"Game Player installs it for mednafen. Other region files, like\n"
+			"scph1001.bin, also work when named for mednafen.");
 	case System::Ps2:
 		if (pcsx2BiosPresent()) {
 			return QString();
 		}
 		return QString("PlayStation 2 needs a PS2 BIOS to run.\n\n"
-			"Copy the BIOS file from your own PlayStation 2 into\n%1\n\n"
-			"PCSX2 finds it there the next time you start a game.")
-			.arg(pcsx2BiosDirs().first());
+			"Drop the PS2 BIOS .bin (the 4 MB file from your own\n"
+			"PlayStation 2) into ~/Games, then open the game again.\n\n"
+			"Game Player installs it for PCSX2.");
 	default:
 		return QString();
 	}
@@ -320,8 +576,12 @@ Launch gameplayer::buildLaunch(System system, const QString &file, const QString
 		break;
 	}
 	case System::Ps2: {
-		l.program = "pcsx2";
+		l.program = pcsx2Program();
 		l.args << "--nogui" << (fullscreen ? "--fullscreen" : "--windowed") << file;
+		/* PCSX2 1.6's GSdx plugin needs an X11 window. ZacOS's session
+		 * sets GDK_BACKEND=wayland,x11, so without this GTK picks Wayland
+		 * and the plugin fails with "Wrong X11 display/window". */
+		l.env << "GDK_BACKEND=x11";
 		l.env << "SDL_VIDEODRIVER=x11";
 		l.env << "SDL_AUDIODRIVER=pulse";
 		break;
@@ -368,10 +628,13 @@ Launch gameplayer::buildLaunch(System system, const QString &file, const QString
 }
 
 bool gameplayer::ensureConfigs(const QString &configDir, bool fullscreen) {
+	if (!ensureGamesFolder()) {
+		return false;
+	}
 	QDir().mkpath(configDir);
 	QDir().mkpath(configDir + "/mednafen/firmware");
 	QDir().mkpath(configDir + "/mupen64plus");
-	const QString saveDir = QDir::homePath() + "/Games/Saved Games";
+	const QString saveDir = gamesFolder() + "/Saved Games";
 	QDir().mkpath(saveDir);
 
 	/* Autoconfig profile for the Logitech Dual Action gamepad, so RetroArch
@@ -425,8 +688,9 @@ QString gameplayer::retroarchConfig(const QString &saveDir, bool fullscreen) {
 
 QString gameplayer::mednafenConfig(bool fullscreen) {
 	return QStringLiteral(
-		"; Game Player: BIOS files (scph5501.bin and the like) belong in the\n"
-		"; firmware folder beside this file.\n"
+		"; Game Player copies PlayStation BIOS files dropped in ~/Games\n"
+		"; (scph5500.bin, scph5501.bin, scph5502.bin) into the firmware\n"
+		"; folder beside this file.\n"
 		"video.fs %1\n"
 		"autosave 1\n"
 		"load_state 1\n"
