@@ -170,10 +170,24 @@ check(r.returncode == 0 and "system: Game Boy Advance" in r.stdout and "mgba_lib
 # PlayStation: a cue sheet plus its track.
 cue = make_rom(tmp, "game.cue", b'FILE "game.bin" BINARY\n  TRACK 01 MODE2/2352\n    INDEX 01 00:00:00\n')
 make_rom(tmp, "game.bin", b"\x00" * 1024)
+env["ZACOS9_GAMEPLAYER_MEDNAFEN_ID"] = "0x0003046dc21601100006000c00000000"
+env["ZACOS9_GAMEPLAYER_MEDNAFEN_HAT"] = "4"
+env["ZACOS9_GAMEPLAYER_CONTROLLER_MAPPINGS"] = (
+    "guid,Logitech Logitech Dual Action,a:b0,b:b1,x:b2,y:b3,back:b8,start:b9,"
+    "leftshoulder:b4,rightshoulder:b5,lefttrigger:b6,righttrigger:b7,"
+    "dpup:h0.1,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,")
 r = run_check(binary, cue, env)
 check("system: PlayStation" in r.stdout, "PlayStation: a cue sheet is detected")
 check("mednafen" in r.stdout, "PlayStation: uses mednafen")
 check("bios: needed" in r.stdout, "PlayStation: needs a BIOS")
+check("mednafen: psx.input.port1 gamepad" in r.stdout,
+      "PlayStation: configures the controller")
+check("psx.input.port1.gamepad.up joystick 0x0003046dc21601100006000c00000000 "
+      "abs_5- || joystick 0x0003046dc21601100006000c00000000 abs_1-" in r.stdout,
+      "PlayStation: maps the D-pad and left stick")
+check("psx.input.port1.gamepad.cross joystick "
+      "0x0003046dc21601100006000c00000000 button_0" in r.stdout,
+      "PlayStation: maps the face buttons")
 
 # PlayStation 2: an ISO disc image.
 ps2bin = os.path.join(tmp, "ps2bin")
@@ -304,6 +318,10 @@ try:
         check(nes2 in args, "the engine received the game file")
     else:
         check(False, "the engine recorded its arguments")
+    medcfg = os.path.join(config, "zacos9", "gameplayer", "mednafen", "mednafen.cfg")
+    medtext = open(medcfg).read() if os.path.exists(medcfg) else ""
+    check("psx.input.port1.gamepad.cross" in medtext,
+          "the generated mednafen config has the controller mappings")
 finally:
     try:
         proc.kill()

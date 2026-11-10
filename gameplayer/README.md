@@ -30,7 +30,10 @@ Debian; install its AppImage or Flatpak (see below).
    contents even when the file has another name. It moves the BIOS into
    mednafen's firmware folder when it next starts, so you never need to visit
    that folder and the file doesn't stay in `~/Games`. Without a BIOS Game
-   Player says what to drop in and the game won't run.
+   Player says what to drop in and the game won't run. A connected controller
+   (a Logitech Dual Action, say) is mapped to mednafen's first PlayStation
+   pad automatically; other pads can be set up in mednafen's own input
+   configuration (Alt+Shift+1).
 4. **PlayStation 2** needs a PS2 BIOS. Game Player installs PCSX2 with the
    extra (Debian's i386 build; ZacOS enables i386 for Wine). Drop the 4 MB
    PS2 BIOS `.bin` from your own PS2 in `~/Games`; Game Player moves it into
@@ -68,7 +71,9 @@ window also has a close box, but The Collar's item is the reliable way out.
   PCSX2's BIOS folders automatically, removing it from `~/Games`.
 - RetroArch runs windowed with auto save/load of states; its own menu (F1)
   stays available for power users.
-- mednafen runs windowed (`video.fs 0` in its config, written once).
+- mednafen runs windowed (`video.fs 0` in its config, written once); the
+  generated config maps the first connected controller to the PlayStation
+  pad (buttons, D-pad and left stick).
 - PCSX2 runs with `--nogui`, windowed or full screen; its BIOS lives in
   `~/.config/PCSX2/bios/` (or `~/.local/share/PCSX2/bios/` on PCSX2 2.x).
   Debian's program is `/usr/games/PCSX2`; Game Player looks for `PCSX2` or

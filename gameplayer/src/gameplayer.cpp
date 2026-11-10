@@ -5,13 +5,19 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QHash>
 #include <QImage>
 #include <QProcessEnvironment>
 #include <QSaveFile>
 #include <QStandardPaths>
 
 #include <cstdio>
+#include <fcntl.h>
+#include <linux/input.h>
+#include <linux/joystick.h>
+#include <sys/ioctl.h>
 #include <sys/xattr.h>
+#include <unistd.h>
 
 #include <SDL2/SDL.h>
 
@@ -147,6 +153,176 @@ static QStringList rpcs3Command(const QString &game, QString *error) {
 			"Get it from https://rpcs3.net or install the Flatpak.";
 	}
 	return {};
+}
+
+/* One physical controller as mednafen sees it: the ID it prints at startup
+ * (bus, vendor, product, version, axes and buttons), and where a hat's two
+ * axes sit among the joystick API's axes. */
+struct MednafenPad {
+	QString name;
+	QString id;
+	int hatX = -1;
+	int hatY = -1;
+};
+
+static bool mednafenPad(const QString &jsPath, MednafenPad *pad) {
+	const int fd = open(QFile::encodeName(jsPath).constData(), O_RDONLY | O_NONBLOCK);
+	if (fd < 0) {
+		return false;
+	}
+	unsigned char axes = 0, buttons = 0;
+	char name[256] = {};
+	const bool ok = ioctl(fd, JSIOCGAXES, &axes) == 0 &&
+		ioctl(fd, JSIOCGBUTTONS, &buttons) == 0 &&
+		ioctl(fd, JSIOCGNAME(sizeof(name)), name) >= 0;
+	close(fd);
+	if (!ok) {
+		return false;
+	}
+	const QString base = "/sys/class/input/" + QFileInfo(jsPath).fileName() + "/device";
+	const auto hex = [&](const char *file) {
+		QFile f(base + "/id/" + file);
+		if (!f.open(QIODevice::ReadOnly)) {
+			return -1;
+		}
+		bool parsed = false;
+		const int value = f.readAll().trimmed().toInt(&parsed, 16);
+		return parsed ? value : -1;
+	};
+	const int bus = hex("bustype");
+	const int vendor = hex("vendor");
+	const int product = hex("product");
+	const int version = hex("version");
+	if (bus < 0 || vendor < 0 || product < 0 || version < 0) {
+		return false;
+	}
+	pad->name = QString::fromUtf8(name).trimmed();
+	pad->id = QString::asprintf("0x%04x%04x%04x%04x%04x%04x%08x",
+		static_cast<unsigned>(bus), static_cast<unsigned>(vendor),
+		static_cast<unsigned>(product), static_cast<unsigned>(version),
+		static_cast<unsigned>(axes), static_cast<unsigned>(buttons), 0u);
+	/* mednafen numbers hats among the axes; find their place the way it
+	 * does, from the event device's ABS capabilities. */
+	QFile caps(base + "/capabilities/abs");
+	if (caps.open(QIODevice::ReadOnly)) {
+		bool parsed = false;
+		const quint64 bits = caps.readAll().trimmed().toULongLong(&parsed, 16);
+		if (parsed) {
+			int count = 0;
+			for (int code = 0; code < ABS_CNT; code++) {
+				if (!(bits & (quint64(1) << code))) {
+					continue;
+				}
+				if (code == ABS_HAT0X) {
+					pad->hatX = count;
+				} else if (code == ABS_HAT0Y) {
+					pad->hatY = count;
+				}
+				count++;
+			}
+		}
+	}
+	if (pad->hatX < 0 && axes >= 2) {
+		pad->hatX = axes - 2;
+	}
+	if (pad->hatY < 0 && axes >= 1) {
+		pad->hatY = axes - 1;
+	}
+	return true;
+}
+
+static QList<MednafenPad> mednafenPads() {
+	QList<MednafenPad> pads;
+	const QDir input("/dev/input");
+	const QStringList names = input.entryList(QStringList() << "js*",
+		QDir::Files | QDir::System, QDir::Name);
+	for (const QString &name : names) {
+		MednafenPad pad;
+		if (mednafenPad(input.filePath(name), &pad)) {
+			pads << pad;
+		}
+	}
+	return pads;
+}
+
+/* The SDL mapping for a controller, matched by name. When none matches
+ * (a saved mapping for an older device, say), the last one is the one
+ * SDL detected for the connected controller. */
+static QString mednafenMappingFor(const QString &padName) {
+	const QStringList mappings = controllerMappings();
+	QString fallback;
+	for (const QString &mapping : mappings) {
+		const QStringList parts = mapping.split(',');
+		if (parts.size() < 3) {
+			continue;
+		}
+		fallback = mapping;
+		if (parts[1].trimmed().compare(padName, Qt::CaseInsensitive) == 0) {
+			return mapping;
+		}
+	}
+	return fallback;
+}
+
+static QHash<QString, QString> sdlMapping(const QString &mapping) {
+	QHash<QString, QString> values;
+	const QStringList parts = mapping.split(',');
+	for (int i = 2; i < parts.size(); i++) {
+		const int colon = parts[i].indexOf(':');
+		if (colon > 0) {
+			values.insert(parts[i].left(colon), parts[i].mid(colon + 1));
+		}
+	}
+	return values;
+}
+
+/* One SDL mapping value as mednafen's input syntax: buttons, axes and
+ * hats (which mednafen exposes as the axes after the sticks). */
+static QString mednafenInput(const QString &sdl, const MednafenPad &pad) {
+	QString value = sdl;
+	if (value.isEmpty()) {
+		return QString();
+	}
+	if (value.startsWith('b')) {
+		bool ok = false;
+		const int button = value.mid(1).toInt(&ok);
+		return ok ? QString("button_%1").arg(button) : QString();
+	}
+	if (value.startsWith('h')) {
+		const int dot = value.indexOf('.');
+		if (dot < 0) {
+			return QString();
+		}
+		bool ok = false;
+		const int hat = value.mid(1, dot - 1).toInt(&ok);
+		const int direction = value.mid(dot + 1).toInt(&ok);
+		if (!ok || hat != 0) {
+			return QString();
+		}
+		switch (direction) {
+		case 1: return pad.hatY >= 0 ? QString("abs_%1-").arg(pad.hatY) : QString();
+		case 4: return pad.hatY >= 0 ? QString("abs_%1+").arg(pad.hatY) : QString();
+		case 8: return pad.hatX >= 0 ? QString("abs_%1-").arg(pad.hatX) : QString();
+		case 2: return pad.hatX >= 0 ? QString("abs_%1+").arg(pad.hatX) : QString();
+		default: return QString();
+		}
+	}
+	bool inverted = false;
+	if (value.startsWith('~') || value.startsWith('-')) {
+		inverted = true;
+		value = value.mid(1);
+	} else if (value.startsWith('+')) {
+		value = value.mid(1);
+	}
+	if (value.startsWith('a')) {
+		bool ok = false;
+		const int axis = value.mid(1).toInt(&ok);
+		if (!ok) {
+			return QString();
+		}
+		return QString("abs_%1%2").arg(axis).arg(inverted ? "-" : "+");
+	}
+	return QString();
 }
 
 static QStringList libretroDirs(const QString &override) {
@@ -771,7 +947,7 @@ bool gameplayer::ensureConfigs(const QString &configDir, bool fullscreen) {
 	const QString med = configDir + "/mednafen/mednafen.cfg";
 	QFile f(med);
 	if (f.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-		f.write(mednafenConfig(fullscreen).toUtf8());
+		f.write((mednafenConfig(fullscreen) + mednafenInputConfig()).toUtf8());
 		f.close();
 	}
 	return true;
@@ -809,6 +985,84 @@ QString gameplayer::mednafenConfig(bool fullscreen) {
 		"load_state 1\n"
 		"sound.driver sdl\n"
 		"sound.volume 1\n").arg(fullscreen ? 1 : 0);
+}
+
+QString gameplayer::mednafenInputConfig() {
+	QList<MednafenPad> pads;
+	const QString idOverride = qEnvironmentVariable("ZACOS9_GAMEPLAYER_MEDNAFEN_ID");
+	if (!idOverride.isEmpty()) {
+		MednafenPad pad;
+		pad.id = idOverride;
+		bool ok = false;
+		const int hat = qEnvironmentVariableIntValue("ZACOS9_GAMEPLAYER_MEDNAFEN_HAT", &ok);
+		pad.hatX = ok ? hat : -1;
+		pad.hatY = ok ? hat + 1 : -1;
+		pads << pad;
+	} else {
+		pads = mednafenPads();
+	}
+	if (pads.isEmpty()) {
+		return QString();
+	}
+	const MednafenPad pad = pads.first();
+	QHash<QString, QString> mapping = sdlMapping(mednafenMappingFor(pad.name));
+	if (mapping.isEmpty() && pad.name.contains(QLatin1String("Dual Action"), Qt::CaseInsensitive)) {
+		/* SDL has no mapping for it: the same layout as Game Player's
+		 * RetroArch profile for this pad. */
+		mapping = sdlMapping(QStringLiteral(
+			"guid,Logitech Dual Action,a:b1,b:b2,x:b3,y:b0,back:b8,start:b9,"
+			"leftshoulder:b4,rightshoulder:b5,lefttrigger:b6,righttrigger:b7,"
+			"dpup:h0.1,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,"));
+	}
+	if (mapping.isEmpty()) {
+		return QString();
+	}
+	struct Input {
+		const char *key;
+		const char *first;
+		const char *second;
+	};
+	static const Input inputs[] = {
+		{ "up", "dpup", "-a1" },
+		{ "down", "dpdown", "+a1" },
+		{ "left", "dpleft", "-a0" },
+		{ "right", "dpright", "+a0" },
+		{ "triangle", "y", nullptr },
+		{ "cross", "a", nullptr },
+		{ "square", "x", nullptr },
+		{ "circle", "b", nullptr },
+		{ "l1", "leftshoulder", nullptr },
+		{ "r1", "rightshoulder", nullptr },
+		{ "l2", "lefttrigger", nullptr },
+		{ "r2", "righttrigger", nullptr },
+		{ "select", "back", nullptr },
+		{ "start", "start", nullptr },
+	};
+	QString config = QStringLiteral("psx.input.port1 gamepad\n");
+	bool any = false;
+	for (const Input &input : inputs) {
+		QStringList bindings;
+		for (int i = 0; i < 2; i++) {
+			const char *sdl = i == 0 ? input.first : input.second;
+			if (!sdl) {
+				continue;
+			}
+			const QString value = i == 0
+				? mapping.value(QString::fromLatin1(sdl))
+				: QString::fromLatin1(sdl);
+			const QString mapped = mednafenInput(value, pad);
+			if (!mapped.isEmpty()) {
+				bindings << QString("joystick %1 %2").arg(pad.id, mapped);
+			}
+		}
+		if (bindings.isEmpty()) {
+			continue;
+		}
+		any = true;
+		config += QString("psx.input.port1.gamepad.%1 %2\n")
+			.arg(QString::fromLatin1(input.key), bindings.join(" || "));
+	}
+	return any ? config : QString();
 }
 
 

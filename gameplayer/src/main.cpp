@@ -83,6 +83,10 @@ static int checkGame(const QString &file) {
 	}
 	const QString bios = biosInstructions(sys);
 	printf("bios: %s\n", bios.isEmpty() ? "ok" : "needed");
+	const QString mednafenInput = mednafenInputConfig();
+	for (const QString &line : mednafenInput.split('\n', Qt::SkipEmptyParts)) {
+		printf("mednafen: %s\n", qPrintable(line));
+	}
 	for (const QString &c : detectedControllers()) {
 		printf("controller: %s\n", qPrintable(c));
 	}

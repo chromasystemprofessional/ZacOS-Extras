@@ -81,4 +81,9 @@ QString retroarchConfig(const QString &saveDir, bool fullscreen);
 /* Mednafen config (windowed/fullscreen, autosave). */
 QString mednafenConfig(bool fullscreen);
 
+/* Mednafen input mappings for the first connected controller, for the
+ * generated mednafen.cfg: its gamepad buttons and D-pad (and the left
+ * stick for the d-pad directions). Empty when no controller is found. */
+QString mednafenInputConfig();
+
 } // namespace gameplayer
