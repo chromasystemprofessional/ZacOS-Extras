@@ -1,20 +1,25 @@
 /* zacos9-gameplayer: run a console game file (cartridge or disc) in ZacOS 9. */
 
 #include <QApplication>
+#include <QCryptographicHash>
+#include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QProcess>
 #include <QProcessEnvironment>
+#include <QProgressDialog>
 #include <QSet>
 #include <QMap>
 #include <QDir>
 #include <QFile>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QTimer>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 
 #include "collarextension.h"
 #include "gameplayer.h"
@@ -31,12 +36,15 @@ static void usage() {
 	fprintf(stderr,
 		"zacos9-gameplayer: play a console game file.\n"
 		"  zacos9-gameplayer --play FILE\n"
+		"  zacos9-gameplayer --play-disc DEVICE MOUNT\n"
 		"  zacos9-gameplayer --check FILE\n"
+		"  zacos9-gameplayer --check-disc DEVICE MOUNT\n"
 		"\n"
 		"FILE is a cartridge or disc image, or a PlayStation 3 game folder,\n"
 		"that the Sniffer recognises (NES, Super NES, Sega, Game Boy, Game Boy\n"
 		"Advance, PlayStation, PlayStation 2, PlayStation 3 or Nintendo 64).\n"
-		"--check prints what would run without starting anything.\n"
+		"--check prints what would run without starting anything. --play-disc\n"
+		"reads a mounted PlayStation 1 or 2 disc and plays it from the drive.\n"
 		"\n"
 		"Games go in ~/Games. A PlayStation BIOS (scph5500.bin, scph5501.bin or\n"
 		"scph5502.bin) or a 4 MB PlayStation 2 BIOS .bin dropped there is installed\n"
@@ -70,6 +78,243 @@ static void writeVolume(int v) {
 	s.sync();
 }
 
+static int playGame(const QString &file);
+
+/* A cache folder for a disc's image. The mount's timestamp changes for a
+ * different disc, so a swapped disc doesn't reuse the old rip. */
+static QString discCacheDir(const QString &device, const QString &mount) {
+	const QString base = QStandardPaths::writableLocation(QStandardPaths::GenericCacheLocation) +
+		"/zacos9/gameplayer/discs";
+	const QString stamp = QFileInfo(mount).lastModified().toString(Qt::ISODate);
+	const QByteArray key = QCryptographicHash::hash(
+		(device + "|" + mount + "|" + stamp).toUtf8(), QCryptographicHash::Sha256).toHex().left(20);
+	return base + "/" + QString::fromLatin1(key);
+}
+
+static QString discImageName(const QString &mount, DiscSystem system) {
+	QString name = QFileInfo(mount).fileName();
+	for (QChar &c : name) {
+		if (!c.isLetterOrNumber() && c != ' ' && c != '-' && c != '_' &&
+				c != '(' && c != ')' && c != '[' && c != ']' && c != '.') {
+			c = '-';
+		}
+	}
+	name = name.trimmed();
+	if (name.isEmpty()) {
+		name = "disc";
+	}
+	return name + (system == DiscSystem::Ps1 ? ".cue" : ".iso");
+}
+
+/* The image and its marker. The marker is written only after the rip
+ * completes, so an interrupted rip is never mistaken for a finished one. */
+static bool discImageReady(const QString &cacheDir, const QString &image) {
+	if (!QFileInfo(cacheDir + "/disc.ready").isFile() ||
+			!QFileInfo(image).isFile() || QFileInfo(image).size() <= 0) {
+		return false;
+	}
+	if (image.endsWith(QLatin1String(".cue"))) {
+		for (const QFileInfo &track : QDir(cacheDir).entryInfoList(
+				QStringList() << "*.bin", QDir::Files)) {
+			if (track.size() > 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+	return true;
+}
+
+/* Reads a physical disc into a cache image and reports it through `done`.
+ * PlayStation 1 needs a CUE/BIN (mednafen cannot read a drive directly);
+ * PlayStation 2 is read to an ISO. */
+class DiscImageReader : public QObject {
+public:
+	using Done = std::function<void(const QString &image, const QString &error)>;
+
+	DiscImageReader(QWidget *parent, DiscSystem system, const QString &device,
+			const QString &mount, const QString &cacheDir, Done done)
+		: QObject(parent), m_system(system), m_device(device), m_cacheDir(cacheDir),
+		  m_done(std::move(done)) {
+		m_progress = new QProgressDialog(
+			QString("Reading “%1” from the disc…").arg(QFileInfo(mount).fileName()),
+			"Stop", 0, 0, parent);
+		m_progress->setWindowTitle("Game Player");
+		m_progress->setWindowModality(Qt::ApplicationModal);
+		m_progress->setMinimumDuration(0);
+		m_progress->setAutoClose(false);
+		m_progress->setAutoReset(false);
+		connect(m_progress, &QProgressDialog::canceled, this, [this] { cancel(); });
+		m_process = new QProcess(this);
+		m_process->setWorkingDirectory(cacheDir);
+		m_process->setProcessChannelMode(QProcess::MergedChannels);
+		connect(m_process, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
+			if (error == QProcess::FailedToStart && !m_cancelled) {
+				fail(m_program + " could not be started.");
+			}
+		});
+		connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+			[this](int code, QProcess::ExitStatus status) { finished(code, status); });
+	}
+
+	void start() {
+		QDir().mkpath(m_cacheDir);
+		m_progress->show();
+		if (m_system == DiscSystem::Ps1) {
+			m_step = Step::Cdrdao;
+			run("cdrdao", { "read-cd", "--read-raw", "--device", m_device,
+				"--datafile", "disc.bin", "disc.toc" });
+		} else {
+			m_step = Step::Blockdev;
+			run("blockdev", { "--getsize64", m_device });
+		}
+	}
+
+private:
+	enum class Step { Cdrdao, Toc2cue, Blockdev, Dd };
+	DiscSystem m_system;
+	QString m_device;
+	QString m_cacheDir;
+	QString m_program;
+	QStringList m_args;
+	Done m_done;
+	QProgressDialog *m_progress = nullptr;
+	QProcess *m_process = nullptr;
+	Step m_step = Step::Cdrdao;
+	bool m_cancelled = false;
+
+	void run(const QString &program, const QStringList &args) {
+		m_program = program;
+		m_args = args;
+		m_process->start(program, args);
+	}
+
+	void finish(const QString &image) {
+		QFile marker(m_cacheDir + "/disc.ready");
+		if (marker.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+			marker.write(m_system == DiscSystem::Ps1 ? "ps1\n" : "ps2\n");
+			marker.close();
+		}
+		m_progress->close();
+		m_progress->deleteLater();
+		m_process->deleteLater();
+		auto done = m_done;
+		const QString path = image;
+		QTimer::singleShot(0, [done, path] { done(path, QString()); });
+		deleteLater();
+	}
+
+	void fail(const QString &error) {
+		if (m_cancelled) {
+			return;
+		}
+		m_cancelled = true;
+		if (m_process->state() != QProcess::NotRunning) {
+			m_process->kill();
+		}
+		m_progress->close();
+		m_progress->deleteLater();
+		m_process->deleteLater();
+		auto done = m_done;
+		QTimer::singleShot(0, [done, error] { done(QString(), error); });
+		deleteLater();
+	}
+
+	void cancel() {
+		if (m_cancelled) {
+			return;
+		}
+		m_cancelled = true;
+		if (m_process->state() != QProcess::NotRunning) {
+			m_process->kill();
+		}
+		m_progress->close();
+		m_progress->deleteLater();
+		m_process->deleteLater();
+		auto done = m_done;
+		QTimer::singleShot(0, [done] { done(QString(), "Reading the disc was stopped."); });
+		deleteLater();
+	}
+
+	void finished(int code, QProcess::ExitStatus status) {
+		if (m_cancelled) {
+			return;
+		}
+		const QString output = QString::fromLocal8Bit(m_process->readAll()).trimmed();
+		if (code != 0 || status != QProcess::NormalExit) {
+			QString detail = output;
+			if (detail.size() > 600) {
+				detail = detail.right(600);
+			}
+			fail(detail.isEmpty() ? m_program + " failed." : detail);
+			return;
+		}
+		if (m_step == Step::Cdrdao) {
+			m_step = Step::Toc2cue;
+			run("toc2cue", { "disc.toc", "disc.cue" });
+			return;
+		}
+		if (m_step == Step::Toc2cue) {
+			finish(m_cacheDir + "/disc.cue");
+			return;
+		}
+		if (m_step == Step::Blockdev) {
+			bool ok = false;
+			const qint64 size = output.toLongLong(&ok);
+			if (!ok || size <= 0) {
+				fail("The disc's size could not be read.");
+				return;
+			}
+			m_step = Step::Dd;
+			run("dd", { "if=" + m_device, "of=disc.iso", "bs=2048",
+				"count=" + QString::number(size / 2048), "status=none" });
+			return;
+		}
+		if (m_step == Step::Dd) {
+			finish(m_cacheDir + "/disc.iso");
+		}
+	}
+};
+
+static int playDisc(const QString &device, const QString &mount) {
+	if (!device.startsWith(QLatin1String("/dev/"))) {
+		QMessageBox::critical(nullptr, "Game Player", "The disc's drive path is invalid.");
+		return 2;
+	}
+	QString error;
+	const DiscSystem disc = detectDiscSystem(mount, &error);
+	if (disc == DiscSystem::None || disc == DiscSystem::Ps3) {
+		QMessageBox::information(nullptr, "Game Player",
+			error.isEmpty() ? "That disc isn't a PlayStation game." : error);
+		return 2;
+	}
+	const QString cacheDir = discCacheDir(device, mount);
+	const QString image = cacheDir + "/" + discImageName(mount, disc);
+	if (!discImageReady(cacheDir, image)) {
+		QEventLoop loop;
+		QString readError;
+		QString readImage;
+		auto *reader = new DiscImageReader(nullptr, disc, device, mount, cacheDir,
+			[&](const QString &path, const QString &problem) {
+				readImage = path;
+				readError = problem;
+				loop.quit();
+			});
+		reader->start();
+		loop.exec();
+		if (!readError.isEmpty()) {
+			QMessageBox::critical(nullptr, "Game Player", readError);
+			return 2;
+		}
+		if (readImage.isEmpty()) {
+			QMessageBox::critical(nullptr, "Game Player", "Game Player couldn't read this disc.");
+			return 2;
+		}
+		return playGame(readImage);
+	}
+	return playGame(image);
+}
+
 static int checkGame(const QString &file) {
 	const System sys = detectSystem(file);
 	printf("system: %s\n", qPrintable(systemName(sys)));
@@ -101,6 +346,31 @@ static int checkGame(const QString &file) {
 	for (const QString &c : detectedControllers()) {
 		printf("controller: %s\n", qPrintable(c));
 	}
+	return 0;
+}
+
+static int checkDisc(const QString &device, const QString &mount) {
+	printf("device: %s\n", qPrintable(device));
+	printf("mount: %s\n", qPrintable(mount));
+	QString error;
+	const DiscSystem disc = detectDiscSystem(mount, &error);
+	if (disc == DiscSystem::None) {
+		if (error.isEmpty()) {
+			error = "That disc isn't a PlayStation game.";
+		}
+		printf("error: %s\n", qPrintable(error));
+		return 2;
+	}
+	printf("system: %s\n", disc == DiscSystem::Ps1 ? "PlayStation" :
+		disc == DiscSystem::Ps2 ? "PlayStation 2" : "PlayStation 3");
+	if (disc == DiscSystem::Ps3) {
+		if (error.isEmpty()) {
+			error = "PlayStation 3 discs can't be read directly.";
+		}
+		printf("error: %s\n", qPrintable(error));
+		return 2;
+	}
+	printf("engine: %s\n", disc == DiscSystem::Ps1 ? "mednafen" : "PCSX2");
 	return 0;
 }
 
@@ -333,6 +603,12 @@ int main(int argc, char **argv) {
 			fprintf(stderr, "zacos9-gameplayer: %s\n", qPrintable(error));
 		}
 		return checkGame(QString::fromLocal8Bit(argv[2]));
+	}
+	if (std::strcmp(argv[1], "--check-disc") == 0 && argc >= 4) {
+		return checkDisc(QString::fromLocal8Bit(argv[2]), QString::fromLocal8Bit(argv[3]));
+	}
+	if (std::strcmp(argv[1], "--play-disc") == 0 && argc >= 4) {
+		return playDisc(QString::fromLocal8Bit(argv[2]), QString::fromLocal8Bit(argv[3]));
 	}
 	if (std::strcmp(argv[1], "--play") == 0 && argc >= 3) {
 		return playGame(QString::fromLocal8Bit(argv[2]));

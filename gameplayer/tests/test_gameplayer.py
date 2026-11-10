@@ -74,6 +74,11 @@ def run_check(binary, path, env):
                         capture_output=True, text=True, env=env)
 
 
+def run_check_disc(binary, mount, env):
+    return subprocess.run([binary, "--check-disc", "/dev/fake", mount],
+                        capture_output=True, text=True, env=env)
+
+
 def make_rom(root, name, data=b""):
     p = os.path.join(root, name)
     with open(p, "wb") as f:
@@ -206,6 +211,32 @@ check(any(line.startswith("engine:") and ("PCSX2" in line or "pcsx2" in line)
 check("env: GDK_BACKEND=x11" in r.stdout, "PlayStation 2: forces an X11 window")
 check("bios: needed" in r.stdout, "PlayStation 2: needs a BIOS")
 
+# Physical PlayStation discs, as mounted volumes.
+ps1disc = os.path.join(tmp, "mounted-ps1")
+os.makedirs(ps1disc)
+with open(os.path.join(ps1disc, "SYSTEM.CNF"), "w") as f:
+    f.write("BOOT = cdrom:\\SLUS_005.94;1\n")
+r = run_check_disc(binary, ps1disc, env)
+check(r.returncode == 0 and "system: PlayStation" in r.stdout and
+      "engine: mednafen" in r.stdout, "a mounted PS1 disc is recognized")
+ps2disc = os.path.join(tmp, "mounted-ps2")
+os.makedirs(ps2disc)
+with open(os.path.join(ps2disc, "SYSTEM.CNF"), "w") as f:
+    f.write("BOOT2 = cdrom0:\\SLUS_200.62;1\n")
+r = run_check_disc(binary, ps2disc, env)
+check(r.returncode == 0 and "system: PlayStation 2" in r.stdout and
+      "engine: PCSX2" in r.stdout, "a mounted PS2 disc is recognized")
+plaindisc = os.path.join(tmp, "mounted-plain")
+os.makedirs(plaindisc)
+r = run_check_disc(binary, plaindisc, env)
+check(r.returncode == 2 and "error:" in r.stdout,
+      "a mounted disc that isn't a PlayStation game is rejected")
+ps3disc = os.path.join(tmp, "mounted-ps3")
+os.makedirs(os.path.join(ps3disc, "PS3_GAME"))
+r = run_check_disc(binary, ps3disc, env)
+check(r.returncode == 2 and "PlayStation 3" in r.stdout,
+      "a mounted PS3 disc explains that it can't be read directly")
+
 # PlayStation 3: a game folder, not a file.
 ps3 = os.path.join(tmp, "PS3 Game")
 os.makedirs(os.path.join(ps3, "PS3_GAME", "USRDIR"))
@@ -285,6 +316,22 @@ with open(pactl, "w") as f:
             "  ;;\n"
             "esac\n" % (pidlog, pactllog))
 os.chmod(pactl, 0o755)
+mednafen_args = os.path.join(tmp, "mednafen.args")
+fake_mednafen = os.path.join(fakebin, "mednafen")
+with open(fake_mednafen, "w") as f:
+    f.write("#!/bin/sh\nprintf '%%s\\n' \"$@\" > '%s'\nsleep 30\n" % mednafen_args)
+os.chmod(fake_mednafen, 0o755)
+# Fake disc readers: they write what the real cdrdao/toc2cue would.
+fake_cdrdao = os.path.join(fakebin, "cdrdao")
+with open(fake_cdrdao, "w") as f:
+    f.write("#!/bin/sh\nprintf 'data' > disc.bin\nprintf 'toc' > disc.toc\n")
+os.chmod(fake_cdrdao, 0o755)
+fake_toc2cue = os.path.join(fakebin, "toc2cue")
+with open(fake_toc2cue, "w") as f:
+    f.write("#!/bin/sh\n"
+            "printf 'FILE \"disc.bin\" BINARY\\n  TRACK 01 MODE2/2352\\n"
+            "    INDEX 01 00:00:00\\n' > disc.cue\n")
+os.chmod(fake_toc2cue, 0o755)
 env["PATH"] = fakebin + ":" + env["PATH"]
 # Override mupen/mednafen too? The fake retroarch handles the NES game.
 # A PlayStation BIOS dropped in Games, a PlayStation 2 BIOS, and an
@@ -358,6 +405,39 @@ finally:
     except Exception:
         pass
     proc.wait()
+
+# ---- A physical PS1 disc --------------------------------------------------
+biosdir = os.path.join(config, "zacos9", "gameplayer", "mednafen", "firmware")
+os.makedirs(biosdir, exist_ok=True)
+make_rom(biosdir, "scph5501.bin", b"bios")
+disc_proc = subprocess.Popen([binary, "--play-disc", "/dev/fake", ps1disc], env=env,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+try:
+    check(until(lambda: module() is not None, 10.0),
+          "a mounted PS1 disc reads and starts its game")
+    check(os.path.exists(mednafen_args) and open(mednafen_args).read().strip().endswith(".cue"),
+          "the PS1 engine received the disc's CUE image")
+    cache = os.path.join(home, ".cache", "zacos9", "gameplayer", "discs")
+    cues = []
+    for root, _dirs, files in os.walk(cache):
+        cues += [os.path.join(root, name) for name in files if name.endswith(".cue")]
+    check(bool(cues), "the disc image is kept in the cache")
+    err = activate("quit")
+    check(err is None, "the disc game quits")
+    try:
+        disc_proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        disc_proc.kill()
+        disc_proc.wait()
+        check(False, "Game Player exited after the disc game")
+    else:
+        check(disc_proc.returncode == 0, "Game Player exited after the disc game")
+finally:
+    try:
+        disc_proc.kill()
+    except Exception:
+        pass
+    disc_proc.wait()
 
 # An icon the user already chose is left alone.
 try:

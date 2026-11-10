@@ -19,6 +19,14 @@ namespace gameplayer {
 
 enum class System { None, Nes, Snes, Ps1, Ps2, Ps3, N64, Sega, GameBoy, Gba };
 
+/* A physical PlayStation disc in a mounted volume. */
+enum class DiscSystem { None, Ps1, Ps2, Ps3 };
+
+/* Which PlayStation a mounted disc belongs to, or None. Reads the disc's
+ * SYSTEM.CNF (BOOT2 = PlayStation 2, BOOT = PlayStation 1); a PS3 disc dump
+ * is recognized but not playable directly. */
+DiscSystem detectDiscSystem(const QString &mountPath, QString *error = nullptr);
+
 /* The user's games folder, ~/Games. ZACOS9_GAMEPLAYER_GAMES overrides it,
  * for testing. */
 QString gamesFolder();

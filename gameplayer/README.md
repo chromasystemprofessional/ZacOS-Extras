@@ -55,6 +55,12 @@ Debian; install its AppImage or Flatpak (see below).
 8. **Save states** (RetroArch systems) are kept in `~/Games/Saved Games` and
    are saved automatically when a game is quit.
 
+**Physical discs:** put a PlayStation 1 or 2 disc in the drive, wait for it to
+mount, and drag its desktop disk icon onto `~/Games`. Game Player reads the
+disc into its cache (CUE/BIN for PlayStation 1 with `cdrdao`, an ISO for
+PlayStation 2) and starts the right emulator; nothing is added to `~/Games`.
+The first read can take a few minutes, and later drops reuse the cached image.
+
 While a game runs, the **Game Player** module appears in The Collar. Its
 **Quit Game** stops the engine and returns to the desktop. The engine's own
 window also has a close box, but The Collar's item is the reliable way out.
@@ -70,6 +76,9 @@ without stopping it, and the chosen level is remembered for the next game.
 - Volume: mednafen is configured at 100% (its scale is 0–150, not 0–1).
   The Collar's **Volume Down/Up** adjust the running engine's PulseAudio
   stream and remember the level in `~/.config/zacos9/gameplayer/gameplayer.conf`.
+- Physical discs are read with `cdrdao` (PlayStation 1) or `dd`
+  (PlayStation 2) into `~/.cache/zacos9/gameplayer/discs/`. Remove that
+  folder to free the space.
 - `~/Games` holds the games and any PlayStation or PlayStation 2 BIOS `.bin`
   you drop in. Game Player moves a PS1 BIOS into mednafen's firmware folder
   (`~/.config/zacos9/gameplayer/mednafen/firmware/`) and a 4 MB PS2 BIOS into
@@ -124,6 +133,8 @@ emulators needed) and covers:
 - a bare `.bin` and a `.md` document being rejected;
 - `~/Games` being created with its custom folder icon, and an existing icon
   being left alone;
+- a mounted PlayStation 1 disc being read to a CUE image and launched, and
+  a mounted PlayStation 2 disc recognized as PCSX2;
 - a PlayStation BIOS `.bin` dropped in `~/Games` being moved to mednafen,
   and a 4 MB PS2 BIOS `.bin` to PCSX2, without touching an ordinary `.bin`;
 - those BIOS files being removed from `~/Games` once they are in place;

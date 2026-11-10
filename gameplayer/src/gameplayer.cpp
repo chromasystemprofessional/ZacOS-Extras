@@ -759,6 +759,65 @@ System gameplayer::detectSystem(const QString &path) {
 	return System::None;
 }
 
+DiscSystem gameplayer::detectDiscSystem(const QString &mountPath, QString *error) {
+	if (!QFileInfo(mountPath).isDir()) {
+		if (error) {
+			*error = "The disc isn't mounted.";
+		}
+		return DiscSystem::None;
+	}
+	QDir dir(mountPath);
+	QString cnf;
+	for (const QString &name : dir.entryList(QDir::Files | QDir::NoDotAndDotDot)) {
+		if (name.compare(QLatin1String("SYSTEM.CNF"), Qt::CaseInsensitive) == 0) {
+			cnf = mountPath + "/" + name;
+			break;
+		}
+	}
+	if (cnf.isEmpty()) {
+		if (QFileInfo(mountPath + "/PS3_GAME").isDir()) {
+			if (error) {
+				*error = "PlayStation 3 discs can't be read directly. Use a game folder or RPCS3.";
+			}
+			return DiscSystem::Ps3;
+		}
+		if (QFileInfo(mountPath + "/PSX.EXE").isFile()) {
+			return DiscSystem::Ps1;
+		}
+		if (error) {
+			*error = "That disc isn't a PlayStation game.";
+		}
+		return DiscSystem::None;
+	}
+	QFile file(cnf);
+	if (!file.open(QIODevice::ReadOnly)) {
+		if (error) {
+			*error = "The disc's SYSTEM.CNF could not be read.";
+		}
+		return DiscSystem::None;
+	}
+	const QString text = QString::fromLatin1(file.read(64 * 1024)).toUpper();
+	for (const QString &line : text.split(QLatin1Char('\n'))) {
+		const QString setting = line.trimmed();
+		if (setting.startsWith(QLatin1String("BOOT2"))) {
+			return DiscSystem::Ps2;
+		}
+		if (setting.startsWith(QLatin1String("BOOT"))) {
+			return DiscSystem::Ps1;
+		}
+	}
+	if (QFileInfo(mountPath + "/PS3_GAME").isDir()) {
+		if (error) {
+			*error = "PlayStation 3 discs can't be read directly. Use a game folder or RPCS3.";
+		}
+		return DiscSystem::Ps3;
+	}
+	if (error) {
+		*error = "That disc isn't a PlayStation game.";
+	}
+	return DiscSystem::None;
+}
+
 QString gameplayer::launchFile(System system, const QString &path) {
 	if (system != System::Ps1) {
 		return path;
