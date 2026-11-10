@@ -45,8 +45,8 @@ static QImage moduleIcon() {
 }
 
 GameModule::GameModule(CollarExtensionService *service, const QString &game,
-		gameplayer::System system, bool fullscreen, QProcess *engine, QObject *parent)
-	: QObject(parent), m_service(service), m_game(game), m_system(system), m_fullscreen(fullscreen), m_engine(engine) {
+		gameplayer::System system, bool fullscreen, int volume, QProcess *engine, QObject *parent)
+	: QObject(parent), m_service(service), m_game(game), m_system(system), m_fullscreen(fullscreen), m_volume(volume), m_engine(engine) {
 	m_service->modules = [this] { return QList<CollarModule>{ module() }; };
 	m_service->activate = [this](const QString &, const QString &item, Done done) {
 		activate(item, std::move(done));
@@ -68,10 +68,68 @@ GameModule::GameModule(CollarExtensionService *service, const QString &game,
 		}
 	});
 	m_refresh.start();
+	/* The engine's PulseAudio stream appears shortly after it starts. Apply
+	 * the saved volume once it does, retrying for a few seconds. */
+	m_volumeTimer.setInterval(500);
+	connect(&m_volumeTimer, &QTimer::timeout, this, [this] {
+		if (++m_volumeAttempts > 20) {
+			m_volumeTimer.stop();
+			return;
+		}
+		applyVolume();
+	});
+	m_volumeTimer.start();
 }
 
 void GameModule::refreshControllers() {
 	m_controllers = gameplayer::detectedControllers();
+}
+
+/* Change the running engine's own PulseAudio stream, so the volume can be
+ * adjusted without stopping the game. The stream appears shortly after the
+ * engine starts, so the caller retries until it is found. */
+void GameModule::applyVolume() {
+	if (!m_engine || m_engine->processId() <= 0) {
+		return;
+	}
+	const qint64 pid = m_engine->processId();
+	auto *query = new QProcess(this);
+	connect(query, &QProcess::errorOccurred, query, &QProcess::deleteLater);
+	connect(query, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+		[this, query, pid](int code, QProcess::ExitStatus status) {
+			const QByteArray output = query->readAllStandardOutput();
+			query->deleteLater();
+			if (code != 0 || status != QProcess::NormalExit) {
+				return;
+			}
+			const QString text = QString::fromUtf8(output);
+			const QString wanted = QString("application.process.id = \"%1\"").arg(pid);
+			QString input;
+			int at = 0;
+			while ((at = text.indexOf("Sink Input #", at)) >= 0) {
+				const int lineEnd = text.indexOf(QLatin1Char('\n'), at);
+				const int next = lineEnd < 0 ? -1 : text.indexOf("\nSink Input #", lineEnd);
+				const QString block = text.mid(lineEnd, next < 0 ? -1 : next - lineEnd);
+				const int numberEnd = lineEnd < 0 ? text.size() : lineEnd;
+				const QString number = text.mid(at + 12, numberEnd - at - 12).trimmed();
+				if (block.contains(wanted)) {
+					input = number;
+					break;
+				}
+				if (lineEnd < 0) {
+					break;
+				}
+				at = lineEnd + 1;
+			}
+			if (input.isEmpty()) {
+				return;
+			}
+			if (QProcess::startDetached("pactl", { "set-sink-input-volume", input,
+					QString::number(m_volume) + "%" })) {
+				m_volumeTimer.stop();
+			}
+		});
+	query->start("pactl", { "list", "sink-inputs" });
 }
 
 CollarModule GameModule::module() const {
@@ -103,13 +161,31 @@ CollarModule GameModule::module() const {
 		/* RPCS3 keeps its own fullscreen setting. */
 		m.menu << CollarMenuItem::action("fullscreen", "Fullscreen", true, m_fullscreen);
 	}
-	m.menu << CollarMenuItem::action("configure", "Configure Controller...")
+	m.menu << CollarMenuItem::separator()
+		<< CollarMenuItem::text(QString("Volume: %1%").arg(m_volume))
+		<< CollarMenuItem::action("volume-down", "Volume Down")
+		<< CollarMenuItem::action("volume-up", "Volume Up")
+		<< CollarMenuItem::separator()
+		<< CollarMenuItem::action("configure", "Configure Controller...")
 		<< CollarMenuItem::separator()
 		<< CollarMenuItem::action("quit", "Quit Game");
 	return m;
 }
 
 void GameModule::activate(const QString &item, Done done) {
+	if (item == "volume-down" || item == "volume-up") {
+		const int step = item == "volume-up" ? 10 : -10;
+		m_volume = qBound(0, m_volume + step, 150);
+		if (volumeChanged) {
+			volumeChanged(m_volume);
+		}
+		m_volumeAttempts = 0;
+		applyVolume();
+		m_volumeTimer.start();
+		m_service->changed();
+		done(QString());
+		return;
+	}
 	if (item == "fullscreen" && m_system == gameplayer::System::Ps3) {
 		done("RPCS3 keeps its own fullscreen setting.");
 		return;

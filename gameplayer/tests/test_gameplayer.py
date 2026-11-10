@@ -263,10 +263,28 @@ check(r.returncode == 2 and "error:" in r.stdout, "a .md document is not a game"
 fakebin = os.path.join(tmp, "fakebin")
 os.makedirs(fakebin)
 argslog = os.path.join(tmp, "args.txt")
+pidlog = os.path.join(tmp, "engine.pid")
 fake = os.path.join(fakebin, "retroarch")
 with open(fake, "w") as f:
-    f.write("#!/bin/sh\nprintf '%%s\\n' \"$@\" > '%s'\nsleep 30\n" % argslog)
+    f.write("#!/bin/sh\necho $$ > '%s'\nprintf '%%s\\n' \"$@\" > '%s'\nsleep 30\n"
+            % (pidlog, argslog))
 os.chmod(fake, 0o755)
+# A fake sound server: the game's stream belongs to the fake engine's PID,
+# and set-sink-input-volume records what Game Player asked for.
+pactllog = os.path.join(tmp, "pactl.txt")
+pactl = os.path.join(fakebin, "pactl")
+with open(pactl, "w") as f:
+    f.write("#!/bin/sh\n"
+            "case \"$1\" in\n"
+            "list)\n"
+            "  echo 'Sink Input #99'\n"
+            "  echo '    application.process.id = \"'$(cat '%s')'\"'\n"
+            "  ;;\n"
+            "set-sink-input-volume)\n"
+            "  echo \"$@\" >> '%s'\n"
+            "  ;;\n"
+            "esac\n" % (pidlog, pactllog))
+os.chmod(pactl, 0o755)
 env["PATH"] = fakebin + ":" + env["PATH"]
 # Override mupen/mednafen too? The fake retroarch handles the NES game.
 # A PlayStation BIOS dropped in Games, a PlayStation 2 BIOS, and an
@@ -285,6 +303,18 @@ try:
           "the module offers Quit Game")
     check(m is not None and any("Test Pad" in str(x[1]) for x in menu()),
           "the module reports the auto-detected controller")
+    check(item("volume-up") is not None and item("volume-down") is not None,
+          "the module offers volume controls")
+    err = activate("volume-up")
+    check(err is None, "Volume Up succeeds")
+    check(until(lambda: os.path.exists(pactllog) and
+                "set-sink-input-volume 99 110%" in open(pactllog).read(), 5.0),
+          "the game's audio stream volume is raised")
+    with open(os.path.join(config, "zacos9", "gameplayer", "gameplayer.conf")) as f:
+        check("volume=110" in f.read(), "the chosen volume is saved")
+    medcfg = os.path.join(config, "zacos9", "gameplayer", "mednafen", "mednafen.cfg")
+    check(os.path.exists(medcfg) and "sound.volume 100" in open(medcfg).read(),
+          "mednafen's sound volume is 100%, not 1%")
     firmware = os.path.join(config, "zacos9", "gameplayer", "mednafen", "firmware")
     bios = os.path.join(firmware, "scph5501.bin")
     check(os.path.exists(bios) and open(bios, "rb").read() == b"bios",

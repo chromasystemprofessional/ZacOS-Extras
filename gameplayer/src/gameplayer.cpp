@@ -984,7 +984,7 @@ QString gameplayer::mednafenConfig(bool fullscreen) {
 		"autosave 1\n"
 		"load_state 1\n"
 		"sound.driver sdl\n"
-		"sound.volume 1\n").arg(fullscreen ? 1 : 0);
+		"sound.volume 100\n").arg(fullscreen ? 1 : 0);
 }
 
 QString gameplayer::mednafenInputConfig() {

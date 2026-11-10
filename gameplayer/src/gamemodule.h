@@ -21,10 +21,11 @@ public:
 	using Done = std::function<void(const QString &)>;
  
 	GameModule(CollarExtensionService *service, const QString &game,
-		gameplayer::System system, bool fullscreen, QProcess *engine,
+		gameplayer::System system, bool fullscreen, int volume, QProcess *engine,
 		QObject *parent = nullptr);
 
 	std::function<void(bool)> fullscreenChanged;
+	std::function<void(int)> volumeChanged;
 
 	CollarModule module() const;
 	void activate(const QString &item, Done done);
@@ -40,11 +41,15 @@ private:
 	QString m_game;
 	gameplayer::System m_system;
 	bool m_fullscreen;
+	int m_volume;
 	QProcess *m_engine;
 	QTimer m_kill;
 	QTimer m_refresh;
+	QTimer m_volumeTimer;
+	int m_volumeAttempts = 0;
 	QStringList m_controllers;
 	bool m_restartRequested = false;
 	bool m_quitRequested = false;
 	void refreshControllers();
+	void applyVolume();
 };

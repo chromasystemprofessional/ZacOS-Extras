@@ -58,6 +58,8 @@ Debian; install its AppImage or Flatpak (see below).
 While a game runs, the **Game Player** module appears in The Collar. Its
 **Quit Game** stops the engine and returns to the desktop. The engine's own
 window also has a close box, but The Collar's item is the reliable way out.
+**Volume Down** and **Volume Up** change the running game's own audio stream
+without stopping it, and the chosen level is remembered for the next game.
 
 ## Details
 
@@ -65,6 +67,9 @@ window also has a close box, but The Collar's item is the reliable way out.
   gambatte and mGBA cores; mednafen 1.32 for PlayStation; PCSX2 for
   PlayStation 2; mupen64plus for Nintendo 64; RPCS3 for PlayStation 3.
 - Save files and states: `~/Games/Saved Games` for RetroArch systems.
+- Volume: mednafen is configured at 100% (its scale is 0–150, not 0–1).
+  The Collar's **Volume Down/Up** adjust the running engine's PulseAudio
+  stream and remember the level in `~/.config/zacos9/gameplayer/gameplayer.conf`.
 - `~/Games` holds the games and any PlayStation or PlayStation 2 BIOS `.bin`
   you drop in. Game Player moves a PS1 BIOS into mednafen's firmware folder
   (`~/.config/zacos9/gameplayer/mednafen/firmware/`) and a 4 MB PS2 BIOS into
@@ -124,5 +129,7 @@ emulators needed) and covers:
 - those BIOS files being removed from `~/Games` once they are in place;
 - PlayStation 2 running PCSX2 as an X11 client, so its GS plugin can open
   under ZacOS's Wayland session;
+- mednafen's sound volume being 100%, not the old 1%, and the Collar's
+  volume controls changing the game's audio stream and saving the level;
 - the Game Player module appearing while a game runs, with Quit Game;
 - Quit Game stopping the engine and the program.

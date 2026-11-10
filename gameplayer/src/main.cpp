@@ -59,6 +59,17 @@ static void writeFullscreen(bool v) {
 	s.sync();
 }
 
+static int readVolume() {
+	QSettings s(configDir() + "/gameplayer.conf", QSettings::IniFormat);
+	return qBound(0, s.value("volume", 100).toInt(), 150);
+}
+
+static void writeVolume(int v) {
+	QSettings s(configDir() + "/gameplayer.conf", QSettings::IniFormat);
+	s.setValue("volume", qBound(0, v, 150));
+	s.sync();
+}
+
 static int checkGame(const QString &file) {
 	const System sys = detectSystem(file);
 	printf("system: %s\n", qPrintable(systemName(sys)));
@@ -132,8 +143,9 @@ static int playGame(const QString &file) {
 	}
 
 	QProcess engine;
-	GameModule module(&service, game, sys, fullscreen, &engine);
+	GameModule module(&service, game, sys, fullscreen, readVolume(), &engine);
 	module.fullscreenChanged = [](bool v) { writeFullscreen(v); };
+	module.volumeChanged = [](int v) { writeVolume(v); };
 	service.changed();
 
 	engine.setProgram(launch.program);
