@@ -19,6 +19,21 @@ namespace gameplayer {
 
 enum class System { None, Nes, Snes, Ps1, Ps2, Ps3, N64, Sega, GameBoy, Gba };
 
+/* The user's games folder, ~/Games. ZACOS9_GAMEPLAYER_GAMES overrides it,
+ * for testing. */
+QString gamesFolder();
+
+/* Create ~/Games and ~/Games/Saved Games when they don't exist, and give
+ * ~/Games Game Player's folder icon if it has no custom icon yet. */
+bool ensureGamesFolder(QString *error = nullptr);
+
+/* Move a PlayStation BIOS dropped in the games folder (scph5500.bin,
+ * scph5501.bin or scph5502.bin) into mednafen's firmware folder, and a
+ * 4 MB PlayStation 2 BIOS .bin into PCSX2's BIOS folders. Returns the files
+ * it put in place. The dropped file is removed from ~/Games once it is
+ * installed. */
+QStringList installDroppedFirmware(const QString &configDir);
+
 /* Which system a file belongs to, or None. An extension alone is not enough
  * where it is shared: a .md Markdown file is not a Sega cartridge and a bare
  * .bin without a .cue is not a disc. */

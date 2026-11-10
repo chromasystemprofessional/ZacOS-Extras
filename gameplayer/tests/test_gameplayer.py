@@ -4,7 +4,9 @@ private session bus (run under dbus-run-session).
 Usage: test_gameplayer.py PATH/TO/zacos9-gameplayer
 """
 
+import hashlib
 import os
+import struct
 import subprocess
 import sys
 import tempfile
@@ -79,16 +81,37 @@ def make_rom(root, name, data=b""):
     return p
 
 
+def custom_icon_bytes(path, data_home):
+    """The Finder-compatible custom icon: an xattr, or the hashed PNG the
+    Sniffer keeps where a filesystem has no user.* xattrs."""
+    try:
+        return os.getxattr(path, "user.zacos9.custom-icon")
+    except OSError:
+        pass
+    key = "file:" + os.path.realpath(path)
+    digest = hashlib.sha256(key.encode()).hexdigest()
+    store = os.path.join(data_home, "zacos9", "custom-icons", digest + ".png")
+    if os.path.exists(store):
+        with open(store, "rb") as f:
+            return f.read()
+    return None
+
+
 # The Collar module needs a private bus.
 bus = dbus.SessionBus()
 os.environ["ZACOS9_COLLAR_EXTENSION_PREFIX"] = PREFIX
 
 binary = sys.argv[1]
 tmp = tempfile.mkdtemp()
+home = os.path.join(tmp, "home")
+os.makedirs(home)
+games = os.path.join(home, "Games")
 config = os.path.join(tmp, "config")
 os.makedirs(config)
 env = dict(os.environ)
+env["HOME"] = home
 env["XDG_CONFIG_HOME"] = config
+env["XDG_DATA_HOME"] = os.path.join(home, ".local", "share")
 env["ZACOS9_COLLAR_EXTENSION_PREFIX"] = PREFIX
 env["ZACOS9_GAMEPLAYER_CORES"] = os.path.join(tmp, "cores")
 os.makedirs(env["ZACOS9_GAMEPLAYER_CORES"])
@@ -112,6 +135,15 @@ check(r.returncode == 0, "NES: --check succeeds")
 check("system: NES" in r.stdout, "NES: detected as NES")
 check("engine: retroarch" in r.stdout, "NES: uses RetroArch")
 check("nestopia_libretro.so" in r.stdout, "NES: picks the Nestopia core")
+
+# Starting Game Player makes the Games folder and gives it its icon.
+check(os.path.isdir(games), "Game Player creates ~/Games")
+icon = custom_icon_bytes(games, env["XDG_DATA_HOME"])
+check(icon is not None and icon.startswith(b"\x89PNG\r\n\x1a\n"),
+      "~/Games gets a custom folder icon")
+if icon:
+    width, height = struct.unpack(">II", icon[16:24])
+    check((width, height) == (32, 32), "the folder icon is a 32x32 PNG")
 
 sfc = make_rom(tmp, "game.sfc")
 r = run_check(binary, sfc, env)
@@ -146,15 +178,18 @@ check("bios: needed" in r.stdout, "PlayStation: needs a BIOS")
 # PlayStation 2: an ISO disc image.
 ps2bin = os.path.join(tmp, "ps2bin")
 os.makedirs(ps2bin)
-with open(os.path.join(ps2bin, "pcsx2"), "w") as f:
+with open(os.path.join(ps2bin, "PCSX2"), "w") as f:
     f.write("#!/bin/sh\n")
-os.chmod(os.path.join(ps2bin, "pcsx2"), 0o755)
+os.chmod(os.path.join(ps2bin, "PCSX2"), 0o755)
 env["PATH"] = ps2bin + ":" + env["PATH"]
 iso = make_rom(tmp, "game.iso", b"\x00" * 1024)
 r = run_check(binary, iso, env)
 check(r.returncode == 0, "PlayStation 2: --check succeeds")
 check("system: PlayStation 2" in r.stdout, "PlayStation 2: an ISO is detected")
-check("engine: pcsx2" in r.stdout, "PlayStation 2: uses pcsx2")
+check(any(line.startswith("engine:") and ("PCSX2" in line or "pcsx2" in line)
+          for line in r.stdout.splitlines()),
+      "PlayStation 2: uses PCSX2")
+check("env: GDK_BACKEND=x11" in r.stdout, "PlayStation 2: forces an X11 window")
 check("bios: needed" in r.stdout, "PlayStation 2: needs a BIOS")
 
 # PlayStation 3: a game folder, not a file.
@@ -220,6 +255,11 @@ with open(fake, "w") as f:
 os.chmod(fake, 0o755)
 env["PATH"] = fakebin + ":" + env["PATH"]
 # Override mupen/mednafen too? The fake retroarch handles the NES game.
+# A PlayStation BIOS dropped in Games, a PlayStation 2 BIOS, and an
+# unrelated .bin, for the firmware test while the NES game runs.
+make_rom(games, "SCPH5501.BIN", b"bios")
+make_rom(games, "ps2bios.bin", b"\x00" * (4 * 1024 * 1024))
+make_rom(games, "track.bin", b"not firmware")
 nes2 = make_rom(tmp, "play.nes", b"NES\x1A" + b"\x00" * 12)
 proc = subprocess.Popen([binary, "--play", nes2], env=env,
                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -231,6 +271,20 @@ try:
           "the module offers Quit Game")
     check(m is not None and any("Test Pad" in str(x[1]) for x in menu()),
           "the module reports the auto-detected controller")
+    firmware = os.path.join(config, "zacos9", "gameplayer", "mednafen", "firmware")
+    bios = os.path.join(firmware, "scph5501.bin")
+    check(os.path.exists(bios) and open(bios, "rb").read() == b"bios",
+          "a PlayStation BIOS .bin dropped in Games is installed for mednafen")
+    check(not os.path.exists(os.path.join(games, "SCPH5501.BIN")),
+          "the dropped BIOS is moved out of ~/Games")
+    check(not os.path.exists(os.path.join(firmware, "track.bin")),
+          "an ordinary .bin in Games is not treated as firmware")
+    for pcsx2 in (os.path.join(home, ".config", "PCSX2", "bios"),
+                  os.path.join(home, ".local", "share", "PCSX2", "bios")):
+        check(os.path.exists(os.path.join(pcsx2, "ps2bios.bin")),
+              "a PS2 BIOS .bin dropped in Games is installed for PCSX2")
+    check(not os.path.exists(os.path.join(games, "ps2bios.bin")),
+          "the dropped PS2 BIOS is moved out of ~/Games")
     check(item("quit") is not None, "Quit Game is an action item")
     # Quitting stops the engine and the program.
     err = activate("quit")
@@ -256,6 +310,16 @@ finally:
     except Exception:
         pass
     proc.wait()
+
+# An icon the user already chose is left alone.
+try:
+    os.setxattr(games, "user.zacos9.custom-icon", b"kept")
+except OSError:
+    pass
+else:
+    run_check(binary, sfc, env)
+    check(os.getxattr(games, "user.zacos9.custom-icon") == b"kept",
+          "an existing ~/Games icon is kept")
 
 print()
 print("FAILURES: %d" % failures)
