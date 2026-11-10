@@ -157,6 +157,41 @@ check("system: PlayStation 2" in r.stdout, "PlayStation 2: an ISO is detected")
 check("engine: pcsx2" in r.stdout, "PlayStation 2: uses pcsx2")
 check("bios: needed" in r.stdout, "PlayStation 2: needs a BIOS")
 
+# PlayStation 3: a game folder, not a file.
+ps3 = os.path.join(tmp, "PS3 Game")
+os.makedirs(os.path.join(ps3, "PS3_GAME", "USRDIR"))
+for path in (os.path.join(ps3, "PS3_GAME", "PARAM.SFO"),
+             os.path.join(ps3, "PS3_GAME", "USRDIR", "EBOOT.BIN")):
+    with open(path, "wb"):
+        pass
+rpcs3 = os.path.join(tmp, "rpcs3")
+with open(rpcs3, "w") as f:
+    f.write("#!/bin/sh\n")
+os.chmod(rpcs3, 0o755)
+env["ZACOS9_RPCS3"] = rpcs3
+r = run_check(binary, ps3, env)
+check(r.returncode == 0, "PlayStation 3: --check succeeds")
+check("system: PlayStation 3" in r.stdout, "PlayStation 3: a game folder is detected")
+check("engine: " + rpcs3 in r.stdout, "PlayStation 3: uses RPCS3")
+check("bios: needed" in r.stdout, "PlayStation 3: needs its firmware")
+firmware = os.path.join(config, "rpcs3", "dev_flash", "sys", "external")
+os.makedirs(firmware)
+with open(os.path.join(firmware, "libfs.sprx"), "wb"):
+    pass
+r = run_check(binary, ps3, env)
+check("bios: ok" in r.stdout, "PlayStation 3: finds installed firmware")
+psn = os.path.join(tmp, "PSN Game")
+os.makedirs(os.path.join(psn, "USRDIR"))
+for path in (os.path.join(psn, "PARAM.SFO"), os.path.join(psn, "USRDIR", "EBOOT.BIN")):
+    with open(path, "wb"):
+        pass
+r = run_check(binary, psn, env)
+check("system: PlayStation 3" in r.stdout, "an installed PS3 game is detected")
+plain = os.path.join(tmp, "Plain Folder")
+os.makedirs(plain)
+r = run_check(binary, plain, env)
+check(r.returncode == 2 and "error:" in r.stdout, "a plain folder is not a game")
+
 n64 = make_rom(tmp, "game.n64")
 env["ZACOS9_MUPEN_CORELIB"] = "/usr/lib/x86_64-linux-gnu/libmupen64plus.so.2"
 env["ZACOS9_MUPEN_DATADIR"] = "/usr/share/mupen64plus"

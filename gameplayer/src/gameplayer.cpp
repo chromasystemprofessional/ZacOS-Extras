@@ -54,6 +54,94 @@ static bool executableOnPath(const QString &program) {
 	return false;
 }
 
+/* Is this a PlayStation 3 game folder? A disc dump has PS3_GAME/ with
+ * PARAM.SFO (or USRDIR/EBOOT.BIN); an installed PSN game has PARAM.SFO and
+ * USRDIR/EBOOT.BIN at the folder's top. */
+static bool ps3GameFolder(const QString &path) {
+	const QFileInfo info(path);
+	if (!info.isDir()) {
+		return false;
+	}
+	if (QFileInfo(path + "/PS3_GAME").isDir()) {
+		return QFileInfo(path + "/PS3_GAME/PARAM.SFO").isFile() ||
+			QFileInfo(path + "/PS3_GAME/USRDIR/EBOOT.BIN").isFile();
+	}
+	return QFileInfo(path + "/PARAM.SFO").isFile() &&
+		QFileInfo(path + "/USRDIR/EBOOT.BIN").isFile();
+}
+
+/* RPCS3's own config, where its dev_flash firmware lives. A Flatpak has a
+ * private one under ~/.var. */
+static QString rpcs3ConfigDir() {
+	return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) + "/rpcs3";
+}
+
+static bool rpcs3FirmwarePresent() {
+	const QStringList dirs = {
+		rpcs3ConfigDir() + "/dev_flash/sys/external",
+		QDir::homePath() + "/.var/app/net.rpcs3.RPCS3/config/rpcs3/dev_flash/sys/external",
+	};
+	for (const QString &dir : dirs) {
+		const QDir firmware(dir);
+		if (firmware.exists() &&
+				!firmware.entryList(QStringList() << "*.sprx", QDir::Files).isEmpty()) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/* The command that starts RPCS3 on GAME. It can be rpcs3 on PATH, an
+ * AppImage the user downloaded, or the Flatpak. Empty when none is found. */
+static QStringList rpcs3Command(const QString &game, QString *error) {
+	const QString override = qEnvironmentVariable("ZACOS9_RPCS3");
+	if (!override.isEmpty()) {
+		const QFileInfo file(override);
+		if (file.isFile() && file.isExecutable()) {
+			return { override, "--no-gui", game };
+		}
+		if (error) {
+			*error = "ZACOS9_RPCS3 does not name an executable.";
+		}
+		return {};
+	}
+	if (executableOnPath("rpcs3")) {
+		return { "rpcs3", "--no-gui", game };
+	}
+	const QStringList dirs = {
+		QDir::homePath() + "/Applications",
+		QDir::homePath() + "/Downloads",
+		QDir::homePath() + "/.local/bin",
+		QStringLiteral("/opt/rpcs3"),
+		QStringLiteral("/usr/local/bin"),
+		QStringLiteral("/usr/bin"),
+	};
+	for (const QString &dir : dirs) {
+		const QStringList names = QDir(dir).entryList(QDir::Files);
+		for (const QString &name : names) {
+			if (!name.startsWith("rpcs3", Qt::CaseInsensitive) ||
+					!name.endsWith(".AppImage", Qt::CaseInsensitive)) {
+				continue;
+			}
+			const QString path = dir + "/" + name;
+			const QFileInfo file(path);
+			if (file.isFile() && file.isExecutable()) {
+				return { path, "--no-gui", game };
+			}
+		}
+	}
+	if (executableOnPath("flatpak") &&
+			(QFileInfo(QDir::homePath() + "/.local/share/flatpak/app/net.rpcs3.RPCS3").isDir() ||
+			 QFileInfo("/var/lib/flatpak/app/net.rpcs3.RPCS3").isDir())) {
+		return { "flatpak", "run", "net.rpcs3.RPCS3", "--no-gui", game };
+	}
+	if (error) {
+		*error = "Game Player needs RPCS3 to play PlayStation 3 games. "
+			"Get it from https://rpcs3.net or install the Flatpak.";
+	}
+	return {};
+}
+
 static QStringList libretroDirs(const QString &override) {
 	QStringList dirs;
 	if (!override.isEmpty()) {
@@ -196,6 +284,9 @@ static bool pcsx2BiosPresent() {
 
 System gameplayer::detectSystem(const QString &path) {
 	const QFileInfo info(path);
+	if (info.isDir()) {
+		return ps3GameFolder(path) ? System::Ps3 : System::None;
+	}
 	if (!info.isFile()) {
 		return System::None;
 	}
@@ -254,6 +345,7 @@ QString gameplayer::systemName(System system) {
 	case System::Snes: return "Super NES";
 	case System::Ps1: return "PlayStation";
 	case System::Ps2: return "PlayStation 2";
+	case System::Ps3: return "PlayStation 3";
 	case System::N64: return "Nintendo 64";
 	case System::Sega: return "Sega";
 	case System::GameBoy: return "Game Boy";
@@ -282,6 +374,15 @@ QString gameplayer::biosInstructions(System system) {
 			"Copy the BIOS file from your own PlayStation 2 into\n%1\n\n"
 			"PCSX2 finds it there the next time you start a game.")
 			.arg(pcsx2BiosDirs().first());
+	case System::Ps3:
+		if (rpcs3FirmwarePresent()) {
+			return QString();
+		}
+		return QString("PlayStation 3 needs RPCS3 and its firmware.\n\n"
+			"1. Install RPCS3 from https://rpcs3.net (AppImage or Flatpak).\n"
+			"2. Run RPCS3 once and choose File > Install Firmware.\n"
+			"3. Select the official PS3UPDAT.PUP from Sony.\n\n"
+			"Game Player then starts games with RPCS3's --no-gui option.");
 	default:
 		return QString();
 	}
@@ -324,6 +425,18 @@ Launch gameplayer::buildLaunch(System system, const QString &file, const QString
 		l.args << "--nogui" << (fullscreen ? "--fullscreen" : "--windowed") << file;
 		l.env << "SDL_VIDEODRIVER=x11";
 		l.env << "SDL_AUDIODRIVER=pulse";
+		break;
+	}
+	case System::Ps3: {
+		QStringList command = rpcs3Command(file, error);
+		if (command.isEmpty()) {
+			return l;
+		}
+		l.program = command.takeFirst();
+		l.args = command;
+		/* RPCS3 draws with Qt and Vulkan; ZacOS's XWayland is where
+		 * its X11 build runs. Fullscreen is RPCS3's own setting. */
+		l.env << "QT_QPA_PLATFORM=xcb";
 		break;
 	}
 	case System::N64: {

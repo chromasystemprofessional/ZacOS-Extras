@@ -98,15 +98,22 @@ CollarModule GameModule::module() const {
 				(configured ? " (configured)" : " (detected)"));
 		}
 	}
-	m.menu << CollarMenuItem::separator()
-		<< CollarMenuItem::action("fullscreen", "Fullscreen", true, m_fullscreen)
-		<< CollarMenuItem::action("configure", "Configure Controller...")
+	m.menu << CollarMenuItem::separator();
+	if (m_system != gameplayer::System::Ps3) {
+		/* RPCS3 keeps its own fullscreen setting. */
+		m.menu << CollarMenuItem::action("fullscreen", "Fullscreen", true, m_fullscreen);
+	}
+	m.menu << CollarMenuItem::action("configure", "Configure Controller...")
 		<< CollarMenuItem::separator()
 		<< CollarMenuItem::action("quit", "Quit Game");
 	return m;
 }
 
 void GameModule::activate(const QString &item, Done done) {
+	if (item == "fullscreen" && m_system == gameplayer::System::Ps3) {
+		done("RPCS3 keeps its own fullscreen setting.");
+		return;
+	}
 	if (item == "fullscreen") {
 		m_fullscreen = !m_fullscreen;
 		if (fullscreenChanged) {

@@ -33,9 +33,10 @@ static void usage() {
 		"  zacos9-gameplayer --play FILE\n"
 		"  zacos9-gameplayer --check FILE\n"
 		"\n"
-		"FILE is a cartridge or disc image the Sniffer recognises (NES, Super NES,\n"
-		"Sega, Game Boy, Game Boy Advance, PlayStation, PlayStation 2 or\n"
-		"Nintendo 64). --check prints what would run without starting anything.\n");
+		"FILE is a cartridge or disc image, or a PlayStation 3 game folder,\n"
+		"that the Sniffer recognises (NES, Super NES, Sega, Game Boy, Game Boy\n"
+		"Advance, PlayStation, PlayStation 2, PlayStation 3 or Nintendo 64).\n"
+		"--check prints what would run without starting anything.\n");
 }
 
 static QString configDir() {
@@ -63,7 +64,7 @@ static int checkGame(const QString &file) {
 	const Launch launch = buildLaunch(sys, lf, configDir(), readFullscreen(), &error);
 	if (launch.program.isEmpty()) {
 		if (sys == System::None) {
-			printf("error: that file isn't a game Game Player knows how to play.\n");
+			printf("error: that isn't a game Game Player knows how to play.\n");
 		} else {
 			printf("error: %s\n", qPrintable(error));
 		}

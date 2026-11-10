@@ -1,13 +1,15 @@
 #pragma once
 
 /*
- * Game Player: recognise a console game file's system and build the command
- * that runs it. The recognition mirrors the Sniffer's in ~/ZacOS
- * (shell/files/items.cpp, romIconKind), so a file the Sniffer draws as a
- * cartridge or disc is exactly the one Game Player can play.
+ * Game Player: recognise a console game's system and build the command that
+ * runs it. The recognition mirrors the Sniffer's in ~/ZacOS
+ * (shell/files/items.cpp, romIconKind and isPs3GameFolder), so a game the
+ * Sniffer draws as a cartridge, disc or PlayStation 3 package is exactly
+ * the one Game Player can play.
  *
- * Engines (Debian's): RetroArch for NES/Super NES/Sega/Game Boy/Game Boy
- * Advance, mednafen for PlayStation, mupen64plus for Nintendo 64.
+ * Engines: RetroArch for NES/Super NES/Sega/Game Boy/Game Boy Advance,
+ * mednafen for PlayStation, PCSX2 for PlayStation 2, mupen64plus for
+ * Nintendo 64, and RPCS3 for PlayStation 3.
  */
 
 #include <QString>
@@ -15,7 +17,7 @@
 
 namespace gameplayer {
 
-enum class System { None, Nes, Snes, Ps1, Ps2, N64, Sega, GameBoy, Gba };
+enum class System { None, Nes, Snes, Ps1, Ps2, Ps3, N64, Sega, GameBoy, Gba };
 
 /* Which system a file belongs to, or None. An extension alone is not enough
  * where it is shared: a .md Markdown file is not a Sega cartridge and a bare
