@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Front Desk
+Comment=The shared-computer launcher
+Exec=zacos9-frontdesk --window
+TryExec=zacos9-frontdesk
+Icon=applications-other
+Terminal=false
+Categories=Utility;

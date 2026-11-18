@@ -11,6 +11,7 @@ its public interfaces (D-Bus, settings files, XDG autostart).
 | `phone/` | **Phone**: KDE Connect and Syncthing for your phone: notifications, file sharing, clipboard and photo sync | [phone/README.md](phone/README.md) |
 | `gameplayer/` | **Game Player**: plays NES, Super NES, Sega, Game Boy, Game Boy Advance, PlayStation and Nintendo 64 cartridges and discs; double-click a game file, or launch from the Collar module while one runs | [gameplayer/README.md](gameplayer/README.md) |
 | `steam/` | **Steam games in The Collar**: lists the games installed by a native or Flatpak Steam and launches them through that Steam | — |
+| `frontdesk/` | **Front Desk**: a shared-computer session shell with a tabbed app/document panel, a Front Desk login and an At Ease-style setup; uses the real accounts and the existing program allowlist | [frontdesk/README.md](frontdesk/README.md) |
 | `common/` | `CollarExtensionService`, for any extra that adds Collar modules | [common/collarextension.h](common/collarextension.h) |
 
 ## Installing

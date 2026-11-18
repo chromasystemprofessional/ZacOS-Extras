@@ -28,8 +28,21 @@ gameplayer)
 	echo "Double-click a game file to play it, or run: $bin/$program --play <game>"
 	exit 0
 	;;
+frontdesk)
+	scripts/build.sh >/dev/null
+	bin="$HOME/.local/bin"
+	apps="$HOME/.local/share/applications"
+	install -Dm755 build/frontdesk/zacos9-frontdesk "$bin/zacos9-frontdesk"
+	install -Dm755 build/frontdesk/zacos9-frontdesk-setup "$bin/zacos9-frontdesk-setup"
+	mkdir -p "$apps"
+	install -Dm644 frontdesk/data/zacos9-frontdesk.desktop "$apps/zacos9-frontdesk.desktop"
+	install -Dm644 frontdesk/data/zacos9-frontdesk-setup.desktop "$apps/zacos9-frontdesk-setup.desktop"
+	echo "Installed Front Desk and Front Desk Setup to $bin."
+	echo "Run Front Desk Setup to choose a person, then log out and back in."
+	exit 0
+	;;
 *)
-	echo "usage: $0 hue|turntable" >&2
+	echo "usage: $0 hue|turntable|gameplayer|frontdesk" >&2
 	exit 2
 	;;
 esac
