@@ -46,7 +46,9 @@ For an account with Front Desk enabled, `zacos9-session` sets
 - `zacos9-frontdesk` starts instead of the Sniffer;
 - the Collar does not start, and its hot key does not start it;
 - the Front Desk panel fills the usable screen area behind the menu bar;
-- an app launches on a single click and the panel returns when it exits;
+- an app launches on a single click; the panel waits in the Application
+  menu and ⌘-Tab, and only the program in front draws, as on a shared Mac;
+- closing the last program returns to the panel;
 - Quit logs out, Restart and Shut Down use the normal power paths.
 
 The login window shows the Front Desk welcome for Front Desk accounts, with an

@@ -607,7 +607,14 @@ void FrontDeskWindow::launchApp(int index) {
 			}
 			alert(tr("Front Desk"), tr("“%1” couldn't be started.").arg(process->program()));
 		});
-	hide();
+	/* In the session shell the panel stays up as a program of its own: the
+	 * compositor hides it when the program comes forward, and keeps it in
+	 * the Application menu so the person can come back and start another.
+	 * Opened as an ordinary window (a preview), it gets out of the way as
+	 * before. */
+	if (m_preview) {
+		hide();
+	}
 	process->start();
 }
 
