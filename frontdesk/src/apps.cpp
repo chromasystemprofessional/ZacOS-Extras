@@ -16,6 +16,7 @@
 #include <QDBusObjectPath>
 #include <QDBusPendingCallWatcher>
 #include <QDBusVariant>
+#include <QFile>
 #include <QFileInfo>
 #include <QSet>
 #include <QStandardPaths>
@@ -178,6 +179,79 @@ bool listed(const QString &entry, const QStringList &entries) {
 	return false;
 }
 
+/* The desktop entries the system came with, listed when the ISO is built
+ * (iso/config/hooks/normal/9000-zacos9.hook.chroot). The Applications folder
+ * holds only what was installed since; the panel's list follows it. */
+const QSet<QString> &baseApplications() {
+	static QSet<QString> ids;
+	static bool read = false;
+	if (!read) {
+		read = true;
+		for (const QString &path : QStandardPaths::locateAll(
+				QStandardPaths::GenericDataLocation,
+				QStringLiteral("zacos9/base-applications"))) {
+			QFile file(path);
+			if (file.open(QIODevice::ReadOnly)) {
+				for (const QByteArray &line : file.readAll().split('\n')) {
+					if (!line.trimmed().isEmpty()) {
+						ids.insert(QString::fromUtf8(line.trimmed()));
+					}
+				}
+			}
+		}
+	}
+	return ids;
+}
+
+/* A program that names a main category other than Utility is an
+ * application, not one of the Utilities folder's tools (ChatGPT ships
+ * "Utility;Development;"). */
+bool hasAnotherMainCategory(const QStringList &categories) {
+	static const QStringList main = { "AudioVideo", "Development", "Education",
+		"Game", "Graphics", "Network", "Office", "Science", "Settings", "System" };
+	for (const QString &category : categories) {
+		if (main.contains(category, Qt::CaseInsensitive)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/* The Applications folder's rule (appdb.cpp): a user-installed application,
+ * not a system tool, not a utility. The panel and its setup show the same
+ * list the Finder does, so choosing programs means choosing what the person
+ * sees there. */
+bool applicationsFolderApp(GDesktopAppInfo *desktop, const QString &id,
+		const QStringList &categories, const QString &file) {
+	if (id.isEmpty() || id.startsWith(QStringLiteral("zacos9-"))) {
+		return false;
+	}
+	for (const char *bad : { "System", "Settings", "FileManager",
+			"X-ZacOS9-ControlPanel", "X-ZacOS9-Utility" }) {
+		if (categories.contains(QLatin1String(bad), Qt::CaseInsensitive)) {
+			return false;
+		}
+	}
+	bool userInstalled = !baseApplications().contains(id);
+	const QString local = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+	const bool userEntry = !file.isEmpty() &&
+		QFileInfo(file).absoluteFilePath().startsWith(local + "/");
+	char *flatpak = g_desktop_app_info_get_string(desktop, "X-Flatpak");
+	const bool fromFlatpak = flatpak && *flatpak;
+	g_free(flatpak);
+	if (userEntry || fromFlatpak) {
+		userInstalled = true;
+	}
+	if (!userInstalled) {
+		return false;
+	}
+	if (categories.contains(QStringLiteral("Utility"), Qt::CaseInsensitive) &&
+			!hasAnotherMainCategory(categories)) {
+		return false;
+	}
+	return true;
+}
+
 std::vector<DeskApp> filterList(const std::vector<DeskApp> &apps, const QString &user) {
 	bool allowlist = false;
 	QStringList entries;
@@ -213,42 +287,18 @@ std::vector<DeskApp> installed() {
 			continue;
 		}
 		auto *desktop = G_DESKTOP_APP_INFO(info);
-		/* A control panel or utility is not a panel item, even though it
-		 * has a desktop entry of its own. */
+		const char *idText = g_app_info_get_id(info);
+		const char *file = g_desktop_app_info_get_filename(desktop);
 		const char *categories = g_desktop_app_info_get_categories(desktop);
+		const QString id = idText ? QString::fromUtf8(idText) : QString();
+		const QString desktopFile = file ? QString::fromUtf8(file) : QString();
 		const QStringList categoryList = QString::fromUtf8(categories ? categories : "")
 			.split(';', Qt::SkipEmptyParts);
-		if (categoryList.contains(QStringLiteral("X-ZacOS9-ControlPanel")) ||
-				categoryList.contains(QStringLiteral("X-ZacOS9-Utility"))) {
+		if (!applicationsFolderApp(desktop, id, categoryList, desktopFile)) {
 			continue;
 		}
 		const QString entry = entryFor(desktop);
 		if (entry.isEmpty() || seen.contains(entry)) {
-			continue;
-		}
-		const QString base = QFileInfo(entry).fileName();
-		/* ZacOS's user programs belong on the panel (Calculator, Jigsaw,
-		 * Notepad and the rest); the shell, control panels, installers and
-		 * helpers do not. */
-		static const char *const system_programs[] = {
-			"zacos9-controlpanel", "zacos9-collarpanel", "zacos9-finder",
-			"zacos9-frontdesk", "zacos9-frontdesk-setup", "zacos9-menubar",
-			"zacos9-collar", "zacos9-session", "zacos9-greeter", "zacos9-lock",
-			"zacos9-screensaver", "zacos9-keyboard", "zacos9-inhibit",
-			"zacos9-setup", "zacos9-installer", "zacos9-update", "zacos9-store",
-			"zacos9-disksetup", "zacos9-themeinstaller", "zacos9-wininstall",
-			"zacos9-classic", "zacos9-snapshot", "zacos9-appinstall",
-			"zacos9-gtkmenu", "zacos9-web-sharing", "zacos9-disk-helper",
-			"zacos9-accounts-helper", "zacos9-appstore-helper",
-		};
-		bool system = false;
-		for (const char *name : system_programs) {
-			if (base == QString::fromLatin1(name)) {
-				system = true;
-				break;
-			}
-		}
-		if (system) {
 			continue;
 		}
 		const QString name = QString::fromUtf8(g_app_info_get_name(info));
@@ -256,11 +306,10 @@ std::vector<DeskApp> installed() {
 		if (name.isEmpty() || command.isEmpty()) {
 			continue;
 		}
-		const char *file = g_desktop_app_info_get_filename(desktop);
 		char *working = g_desktop_app_info_get_string(desktop, "Path");
 		DeskApp app;
 		app.name = name;
-		app.desktopFile = file ? QString::fromUtf8(file) : QString();
+		app.desktopFile = desktopFile;
 		app.iconName = iconNameFor(desktop);
 		app.entry = entry;
 		app.workingDir = working ? QString::fromUtf8(working) : QString();

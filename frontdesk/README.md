@@ -15,7 +15,7 @@ chosen programs** allowlist is the list of programs on the panel.
 |---|---|
 | User | A Unix account, selected at the login window |
 | Welcome screen | The Front Desk-skinned login window |
-| Front Desk Items | The account's malcontent allowlist, set by an administrator |
+| Front Desk Items | The Applications folder's user-installed programs, chosen in the account's malcontent allowlist |
 | User documents | `~/Documents` |
 | “Go To Front Desk Setup” | `zacos9-frontdesk-setup`, also **Control Panels ▸ Front Desk Setup** |
 | Quit | Log Out, back to the login window |

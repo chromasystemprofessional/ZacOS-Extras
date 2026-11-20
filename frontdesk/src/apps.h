@@ -23,8 +23,8 @@ struct DeskApp {
 
 namespace AppCatalog {
 
-/* Installed programs the Applications folder would show, minus ZacOS's own
- * programs and control panels. */
+/* The user-installed applications in the Finder's Applications folder:
+ * not ZacOS's own programs, control panels, utilities or system helpers. */
 std::vector<DeskApp> installed();
 
 /* The same list, filtered by the account's malcontent app filter. No filter
