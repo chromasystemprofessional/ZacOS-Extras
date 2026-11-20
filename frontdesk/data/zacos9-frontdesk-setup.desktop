@@ -7,4 +7,5 @@ Exec=zacos9-frontdesk-setup
 TryExec=zacos9-frontdesk-setup
 Icon=computer
 Terminal=false
-Categories=Settings;Utility;
+Categories=Settings;System;X-ZacOS9-ControlPanel;
+OnlyShowIn=ZacOS9;

@@ -49,3 +49,12 @@ test('frontdesk-setup',
   ],
   timeout: 60,
 )
+
+test('frontdesk-apps',
+  executable('test-frontdesk-apps', 'tests/test_apps.cpp', 'src/apps.cpp',
+    include_directories: include_directories('src'),
+    dependencies: [qt6, frontdesk_gio],
+    build_by_default: false,
+  ),
+  timeout: 60,
+)

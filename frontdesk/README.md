@@ -17,7 +17,7 @@ chosen programs** allowlist is the list of programs on the panel.
 | Welcome screen | The Front Desk-skinned login window |
 | Front Desk Items | The account's malcontent allowlist, set by an administrator |
 | User documents | `~/Documents` |
-| “Go To Front Desk Setup” | `zacos9-frontdesk-setup`, the administrator's control panel |
+| “Go To Front Desk Setup” | `zacos9-frontdesk-setup`, also **Control Panels ▸ Front Desk Setup** |
 | Quit | Log Out, back to the login window |
 | Restricted Finder | Puppy Mode |
 | Guest | The existing Guest account, emptied at each login |
@@ -33,6 +33,9 @@ polkit.
 - `zacos9-frontdesk-setup` — the administrator's setup window, with the At
   Ease Setup layout: users list, per-user programs, menus, speech, save
   location, Finder access and screen captures.
+- **Front Desk Setup in Control Panels** — the setup can be opened from an
+  ordinary session, without Front Desk running, from Control Panels, the Zac
+  menu's Control Panels, or the panel's Special menu.
 - Original pixel art in the same layout as the reference: a 575×400 panel,
   folder tabs, 48 px buttons, labels, page arrows, and a ZacOS Platinum/teal
   palette. No Apple artwork, names or sounds.
