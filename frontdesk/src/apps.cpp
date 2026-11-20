@@ -213,6 +213,15 @@ std::vector<DeskApp> installed() {
 			continue;
 		}
 		auto *desktop = G_DESKTOP_APP_INFO(info);
+		/* A control panel or utility is not a panel item, even though it
+		 * has a desktop entry of its own. */
+		const char *categories = g_desktop_app_info_get_categories(desktop);
+		const QStringList categoryList = QString::fromUtf8(categories ? categories : "")
+			.split(';', Qt::SkipEmptyParts);
+		if (categoryList.contains(QStringLiteral("X-ZacOS9-ControlPanel")) ||
+				categoryList.contains(QStringLiteral("X-ZacOS9-Utility"))) {
+			continue;
+		}
 		const QString entry = entryFor(desktop);
 		if (entry.isEmpty() || seen.contains(entry)) {
 			continue;
