@@ -1,6 +1,6 @@
-/* The Front Desk panel's program list (apps.cpp): ZacOS's own user
- * programs belong on it, but its control panels and system programs do
- * not, whatever their desktop entries say. */
+/* The Front Desk panel's program list (apps.cpp): the user-installed
+ * applications in the Finder's Applications folder. ZacOS's own programs,
+ * control panels, utilities and baseline applications are not there. */
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
@@ -30,32 +30,46 @@ int main(int argc, char **argv) {
 	if (!tmp.isValid()) {
 		return 1;
 	}
-	const QString data = tmp.filePath("data");
+	const QString dataHome = tmp.filePath("data-home");
+	const QString dataSystem = tmp.filePath("data-system");
 	const QString bin = tmp.filePath("bin");
-	QDir().mkpath(data + "/applications");
+	QDir().mkpath(dataHome + "/applications");
+	QDir().mkpath(dataHome + "/zacos9");
+	QDir().mkpath(dataSystem + "/applications");
 	QDir().mkpath(bin);
 
-	/* A ZacOS user program, found on PATH as the installed ones are. */
+	/* A user-installed application, found on PATH as the installed ones
+	 * are. */
 	QFile helper(bin + "/zacos9-test-program");
 	helper.open(QIODevice::WriteOnly);
 	helper.write("#!/bin/sh\nexit 0\n");
 	helper.close();
 	helper.setPermissions(QFile::ReadOwner | QFile::WriteOwner | QFile::ExeOwner);
 
-	entry(data, "zacos9-test-program.desktop",
-		"Name=Test Program\nExec=zacos9-test-program\nCategories=Utility;\n");
-	entry(data, "zacos9-test-panel.desktop",
+	entry(dataHome, "test-program.desktop",
+		"Name=Test Program\nExec=zacos9-test-program\nCategories=Graphics;\n");
+	entry(dataHome, "test-utility.desktop",
+		"Name=Test Utility\nExec=/bin/false\nCategories=Utility;\n");
+	entry(dataHome, "test-panel.desktop",
 		"Name=Test Panel\nExec=/bin/false\nCategories=Settings;X-ZacOS9-ControlPanel;\n");
-	qputenv("PATH", (bin + ':' + qgetenv("PATH")).toUtf8());
-	qputenv("XDG_DATA_HOME", data.toUtf8());
-	qputenv("XDG_DATA_DIRS", data.toUtf8());
+	entry(dataHome, "zacos9-test-app.desktop",
+		"Name=Test ZacOS App\nExec=zacos9-test-program\nCategories=Graphics;\n");
+	entry(dataSystem, "baseline.desktop",
+		"Name=Baseline App\nExec=/bin/false\nCategories=Graphics;\n");
+	QFile baseList(dataHome + "/zacos9/base-applications");
+	baseList.open(QIODevice::WriteOnly);
+	baseList.write("baseline.desktop\n");
+	baseList.close();
 
-	bool user = false, panel = false;
+	qputenv("PATH", (bin + ':' + qgetenv("PATH")).toUtf8());
+	qputenv("XDG_DATA_HOME", dataHome.toUtf8());
+	qputenv("XDG_DATA_DIRS", dataSystem.toUtf8());
+
+	QStringList names;
 	for (const DeskApp &a : AppCatalog::installed()) {
-		user |= a.name == QStringLiteral("Test Program");
-		panel |= a.name == QStringLiteral("Test Panel");
+		names << a.name;
 	}
-	check(user, "a ZacOS user program is on the panel");
-	check(!panel, "a control panel is not");
+	check(names == QStringList{ "Test Program" },
+		"only the Applications-folder application is on the panel");
 	return fails ? 1 : 0;
 }
