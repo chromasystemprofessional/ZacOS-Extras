@@ -15,6 +15,9 @@ struct FrontDeskSettings {
 	bool finder = false;
 	bool speech = false;
 	bool capture = false;
+	/* The menu bar's Zac menu, with every item: Control Panels, Software,
+	 * Old Dog and the rest. Off by default: it is a way out of the panel. */
+	bool zacMenu = false;
 	/* The settings file exists: Front Desk starts for this account. */
 	bool frontDesk = false;
 

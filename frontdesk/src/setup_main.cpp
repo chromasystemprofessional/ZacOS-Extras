@@ -237,6 +237,11 @@ public:
 		m_menus->addItem(tr("All"), QStringLiteral("all"));
 		m_menus->setCurrentIndex(qMax(0, m_menus->findData(m_settings.menus)));
 		form3->addRow(tr("Menus:"), m_menus);
+		m_zacMenu = new QCheckBox(tr("Show all Zac menu items"), page3);
+		m_zacMenu->setChecked(m_settings.zacMenu);
+		m_zacMenu->setToolTip(tr("The menu bar's Zac menu, with Control Panels, Software, "
+			"Old Dog and the rest. This gives the person a way out of the Front Desk panel."));
+		form3->addRow(QString(), m_zacMenu);
 		m_speech = new QCheckBox(tr("Speak button names"), page3);
 		m_speech->setChecked(m_settings.speech);
 		form3->addRow(QString(), m_speech);
@@ -336,6 +341,7 @@ private:
 			args << QStringLiteral("save=") + m_save->currentData().toString();
 			args << QStringLiteral("save-removable=") + (m_removable->isChecked() ? QStringLiteral("on") : QStringLiteral("off"));
 			args << QStringLiteral("finder=") + (m_finder->isChecked() ? QStringLiteral("on") : QStringLiteral("off"));
+			args << QStringLiteral("zac-menu=") + (m_zacMenu->isChecked() ? QStringLiteral("on") : QStringLiteral("off"));
 			args << QStringLiteral("speech=") + (m_speech->isChecked() ? QStringLiteral("on") : QStringLiteral("off"));
 			args << QStringLiteral("capture=") + (m_capture->isChecked() ? QStringLiteral("on") : QStringLiteral("off"));
 		} else {
@@ -391,6 +397,7 @@ private:
 	QComboBox *m_startup = nullptr;
 	QComboBox *m_menus = nullptr;
 	QComboBox *m_save = nullptr;
+	QCheckBox *m_zacMenu = nullptr;
 	QCheckBox *m_speech = nullptr;
 	QCheckBox *m_removable = nullptr;
 	QCheckBox *m_capture = nullptr;
