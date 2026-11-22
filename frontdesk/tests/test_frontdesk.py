@@ -13,9 +13,11 @@ with tempfile.TemporaryDirectory() as tmp:
     os.makedirs(os.path.join(tmp, "frontdesk"))
     user = pwd.getpwuid(os.getuid()).pw_name
     with open(os.path.join(tmp, "frontdesk", user), "w") as f:
-        f.write("menus=restricted\nsave=user\nfinder=off\nspeech=off\ncapture=off\n")
+        f.write("menus=restricted\nsave=user\nfinder=off\nspeech=off\ncapture=off\n"
+                "zac-menu=on\n")
     out = subprocess.run([exe, "--check"], env=env, capture_output=True, text=True)
     assert out.returncode == 0, out.stderr
     assert "Front Desk:" in out.stdout, out.stdout
     assert "frontDesk=1" in out.stdout, out.stdout
+    assert "zacMenu=1" in out.stdout, out.stdout
 print("ok: Front Desk reads its settings and starts")

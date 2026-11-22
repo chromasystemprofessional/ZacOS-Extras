@@ -49,7 +49,8 @@ polkit.
 For an account with Front Desk enabled, `zacos9-session` sets
 `ZACOS9_SHELL=frontdesk` and `ZACOS9_MENUBAR_MODE=frontdesk`:
 
-- the menu bar starts with a minimal Zac menu;
+- the menu bar starts with a minimal Zac menu, or all its items when the
+  account has `zac-menu=on`;
 - `zacos9-frontdesk` starts instead of the Sniffer, and The Collar stays
   visible (and its hot key works);
 - the Front Desk panel fills the usable screen area behind the menu bar;
@@ -74,7 +75,12 @@ save-removable=on|off
 finder=on|off
 speech=on|off
 capture=on|off
+zac-menu=on|off
 ```
+
+`menus` is the Front Desk panel's own menus. `zac-menu=on` gives the menu
+bar's Zac menu every item (Control Panels, Software, Old Dog and the rest);
+it is off by default because it is a way out of the panel.
 
 `zacos9-accounts-helper frontdesk-settings USER KEY=VALUE…` writes validated
 settings. Only an administrator can change them. The program list is the

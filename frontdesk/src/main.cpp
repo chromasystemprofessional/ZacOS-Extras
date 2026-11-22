@@ -34,9 +34,9 @@ int main(int argc, char **argv) {
 	if (parser.isSet(check)) {
 		const FrontDeskSettings settings = FrontDeskSettings::load();
 		const auto apps = AppCatalog::forCurrentUser();
-		std::printf("Front Desk: user=%s programs=%zu frontDesk=%d menus=%s\n",
+		std::printf("Front Desk: user=%s programs=%zu frontDesk=%d menus=%s zacMenu=%d\n",
 			settings.user.toUtf8().constData(), apps.size(), settings.frontDesk ? 1 : 0,
-			settings.menus.toUtf8().constData());
+			settings.menus.toUtf8().constData(), settings.zacMenu ? 1 : 0);
 		return 0;
 	}
 
