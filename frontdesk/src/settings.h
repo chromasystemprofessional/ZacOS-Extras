@@ -18,6 +18,9 @@ struct FrontDeskSettings {
 	/* The menu bar's Zac menu, with every item: Control Panels, Software,
 	 * Old Dog and the rest. Off by default: it is a way out of the panel. */
 	bool zacMenu = false;
+	/* One Front Desk panel per screen, each on its own front program. Off:
+	 * one panel and one front program, on the main display. */
+	bool eachScreen = false;
 	/* The settings file exists: Front Desk starts for this account. */
 	bool frontDesk = false;
 

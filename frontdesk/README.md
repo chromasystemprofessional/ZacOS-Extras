@@ -51,6 +51,8 @@ For an account with Front Desk enabled, `zacos9-session` sets
 
 - the menu bar starts with a minimal Zac menu, or all its items when the
   account has `zac-menu=on`;
+- with `screens=each`, every display gets its own panel and its own front
+  program, though there is still one pointer and keyboard;
 - `zacos9-frontdesk` starts instead of the Sniffer, and The Collar stays
   visible (and its hot key works);
 - the Front Desk panel fills the usable screen area behind the menu bar;
@@ -76,11 +78,14 @@ finder=on|off
 speech=on|off
 capture=on|off
 zac-menu=on|off
+screens=one|each
 ```
 
 `menus` is the Front Desk panel's own menus. `zac-menu=on` gives the menu
 bar's Zac menu every item (Control Panels, Software, Old Dog and the rest);
-it is off by default because it is a way out of the panel.
+it is off by default because it is a way out of the panel. `screens=each`
+gives every display its own panel and its own front program; the pointer and
+keyboard move between them.
 
 `zacos9-accounts-helper frontdesk-settings USER KEY=VALUE…` writes validated
 settings. Only an administrator can change them. The program list is the

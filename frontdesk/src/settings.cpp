@@ -76,6 +76,8 @@ FrontDeskSettings FrontDeskSettings::load(const QString &user) {
 			s.capture = value == QStringLiteral("on");
 		} else if (key == QStringLiteral("zac-menu")) {
 			s.zacMenu = value == QStringLiteral("on");
+		} else if (key == QStringLiteral("screens")) {
+			s.eachScreen = value == QStringLiteral("each");
 		}
 	}
 	return s;
