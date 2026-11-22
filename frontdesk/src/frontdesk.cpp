@@ -160,6 +160,9 @@ void FrontDeskWindow::buildMenus() {
 	connect(m_actSound, &QAction::triggered, this, [this] {
 		m_sound = !m_sound;
 		m_actSound->setText(m_sound ? tr("Turn Sound Off") : tr("Turn Sound On"));
+		if (m_sound) {
+			clickSound();
+		}
 	});
 	m_actEject = special->addAction(tr("Eject Disk…"));
 	m_actEject->setShortcut(QKeySequence(QStringLiteral("Ctrl+E")));
@@ -399,13 +402,16 @@ FrontDeskWindow::Hit FrontDeskWindow::hitTest(const QPoint &pos) const {
 void FrontDeskWindow::activate(const Hit &hit) {
 	switch (hit.type) {
 	case Hit::Type::AppsTab:
+		clickSound();
 		setPanel(Panel::Apps);
 		break;
 	case Hit::Type::UserTab:
+		clickSound();
 		setPanel(Panel::Documents);
 		break;
 	case Hit::Type::Prev:
 		if (m_page > 0) {
+			clickSound();
 			m_page--;
 			m_selected = -1;
 			update();
@@ -413,6 +419,7 @@ void FrontDeskWindow::activate(const Hit &hit) {
 		break;
 	case Hit::Type::Next:
 		if (m_page + 1 < pageCount()) {
+			clickSound();
 			m_page++;
 			m_selected = -1;
 			update();
@@ -578,6 +585,7 @@ void FrontDeskWindow::launchApp(int index) {
 		alert(tr("Front Desk"), tr("“%1” doesn't say how to start.").arg(app.name));
 		return;
 	}
+	openSound();
 	auto *process = new QProcess(this);
 	if (!app.workingDir.isEmpty()) {
 		process->setWorkingDirectory(app.workingDir);
@@ -620,12 +628,15 @@ void FrontDeskWindow::launchApp(int index) {
 
 void FrontDeskWindow::openDocument(const QFileInfo &file) {
 	if (file.isDir()) {
+		openSound();
 		openFolder(file.absoluteFilePath());
 		return;
 	}
 	if (!QDesktopServices::openUrl(QUrl::fromLocalFile(file.absoluteFilePath()))) {
 		alert(tr("Front Desk"), tr("“%1” couldn't be opened.").arg(file.fileName()));
+		return;
 	}
+	openSound();
 }
 
 void FrontDeskWindow::openFolder(const QString &path) {
@@ -836,7 +847,26 @@ void FrontDeskWindow::speak(const QString &text) {
 	QProcess::startDetached(QStringLiteral("spd-say"), { text });
 }
 
+void FrontDeskWindow::clickSound() {
+	if (m_sound) {
+		m_sounds.click();
+	}
+}
+
+void FrontDeskWindow::openSound() {
+	if (m_sound) {
+		m_sounds.open();
+	}
+}
+
+void FrontDeskWindow::alertSound() {
+	if (m_sound) {
+		m_sounds.alert();
+	}
+}
+
 void FrontDeskWindow::alert(const QString &title, const QString &text) {
+	alertSound();
 	QMessageBox::warning(this, title, text, QMessageBox::Ok);
 }
 

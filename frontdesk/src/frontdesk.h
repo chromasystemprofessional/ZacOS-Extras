@@ -11,6 +11,7 @@
 
 #include "apps.h"
 #include "settings.h"
+#include "sound.h"
 
 class QAction;
 class QCloseEvent;
@@ -80,6 +81,9 @@ private:
 	void logOut();
 	void power(const QString &action);
 	void speak(const QString &text);
+	void clickSound();
+	void openSound();
+	void alertSound();
 	void alert(const QString &title, const QString &text);
 	QString selectedPath() const;
 
@@ -97,6 +101,7 @@ private:
 	int m_selected = -1;
 	Hit m_pressHit;
 	bool m_sound = true;
+	FrontDeskSound m_sounds;
 	QFileIconProvider m_icons;
 	QTimer m_speechTimer;
 
