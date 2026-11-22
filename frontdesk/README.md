@@ -39,6 +39,10 @@ polkit.
 - Original pixel art in the same layout as the reference: a 575×400 panel,
   folder tabs, 48 px buttons, labels, page arrows, and a ZacOS Platinum/teal
   palette. No Apple artwork, names or sounds.
+- Original ZacOS sounds when the tabs, page arrows and icons are clicked:
+  the woodblock click for tabs and pages, the chirp for opening an item, and
+  the alert chime for an action that couldn't be done. **Special ▸ Turn Sound
+  Off** silences them.
 
 ## Session behaviour
 
@@ -46,8 +50,8 @@ For an account with Front Desk enabled, `zacos9-session` sets
 `ZACOS9_SHELL=frontdesk` and `ZACOS9_MENUBAR_MODE=frontdesk`:
 
 - the menu bar starts with a minimal Zac menu;
-- `zacos9-frontdesk` starts instead of the Sniffer;
-- the Collar does not start, and its hot key does not start it;
+- `zacos9-frontdesk` starts instead of the Sniffer, and The Collar stays
+  visible (and its hot key works);
 - the Front Desk panel fills the usable screen area behind the menu bar;
 - an app launches on a single click; the panel waits in the Application
   menu and ⌘-Tab, and only the program in front draws, as on a shared Mac;
