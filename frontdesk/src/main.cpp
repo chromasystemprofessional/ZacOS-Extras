@@ -94,10 +94,12 @@ int main(int argc, char **argv) {
 	if (parser.isSet(check)) {
 		const FrontDeskSettings settings = FrontDeskSettings::load();
 		const auto apps = AppCatalog::forCurrentUser();
+		const QStringList folders = frontDeskFolders();
 		std::printf("Front Desk: user=%s programs=%zu frontDesk=%d menus=%s zacMenu=%d "
-			"screens=%s\n", settings.user.toUtf8().constData(), apps.size(),
-			settings.frontDesk ? 1 : 0, settings.menus.toUtf8().constData(),
-			settings.zacMenu ? 1 : 0, settings.eachScreen ? "each" : "one");
+			"screens=%s folders=%d first=%s\n", settings.user.toUtf8().constData(),
+			apps.size(), settings.frontDesk ? 1 : 0, settings.menus.toUtf8().constData(),
+			settings.zacMenu ? 1 : 0, settings.eachScreen ? "each" : "one",
+			int(folders.size()), folders.value(0).toUtf8().constData());
 		return 0;
 	}
 

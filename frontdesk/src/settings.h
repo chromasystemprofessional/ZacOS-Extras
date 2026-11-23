@@ -8,7 +8,6 @@ struct FrontDeskSettings {
 	QString user;
 	QString displayName;
 	QString home;
-	QString documents;
 	QString menus = QStringLiteral("restricted");
 	QString save = QStringLiteral("user");
 	bool saveRemovable = false;
@@ -29,3 +28,11 @@ struct FrontDeskSettings {
 	static QString currentUserName();
 	static QString configDir();
 };
+
+/* The folders that get their own page on the user panel. The user's own
+ * list, in ~/.config/zacos9/frontdesk-folders; a missing file means the
+ * home folder alone, and an existing empty one means no folder pages.
+ * ZACOS9_FRONTDESK_FOLDERS replaces the file, for tests. */
+QString frontDeskFoldersFile();
+QStringList frontDeskFolders();
+bool setFrontDeskFolders(const QStringList &paths);

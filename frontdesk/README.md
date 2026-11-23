@@ -16,7 +16,7 @@ chosen programs** allowlist is the list of programs on the panel.
 | User | A Unix account, selected at the login window |
 | Welcome screen | The Front Desk-skinned login window |
 | Front Desk Items | The Applications folder's user-installed programs, chosen in the account's malcontent allowlist |
-| User documents | `~/Documents` |
+| Folder pages | The home folder by default; the user chooses them in **Special ▸ Folders…** |
 | “Go To Front Desk Setup” | `zacos9-frontdesk-setup`, also **Control Panels ▸ Front Desk Setup** |
 | Quit | Log Out, back to the login window |
 | Restricted Finder | Puppy Mode |
@@ -88,7 +88,14 @@ gives every display its own panel and its own front program; the pointer and
 keyboard move between them.
 
 `zacos9-accounts-helper frontdesk-settings USER KEY=VALUE…` writes validated
-settings. Only an administrator can change them. The program list is the
+settings. Only an administrator can change them.
+
+The user's own folder pages are separate: the panel starts on the home
+folder, and **Special ▸ Folders…** adds, removes and reorders folders, each
+with its own tab. They are kept in `~/.config/zacos9/frontdesk-folders`, one
+path a line; a missing file means the home folder alone.
+
+The program list is the
 account's existing malcontent allowlist, not a Front Desk file.
 
 ## Build and test

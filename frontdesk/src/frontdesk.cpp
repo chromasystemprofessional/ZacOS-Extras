@@ -8,15 +8,20 @@
 #include <QCloseEvent>
 #include <QDBusConnection>
 #include <QDesktopServices>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFontMetrics>
+#include <QHBoxLayout>
 #include <QInputDialog>
 #include <QKeySequence>
+#include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -24,8 +29,9 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QProcess>
-#include <QStandardPaths>
+#include <QPushButton>
 #include <QUrl>
+#include <QVBoxLayout>
 
 #include <algorithm>
 
@@ -150,10 +156,17 @@ void FrontDeskWindow::buildMenus() {
 		sortGroup->addAction(action);
 	}
 	m_actSortName->setChecked(true);
-	connect(m_actSortName, &QAction::triggered, this, [this] { m_sort = Sort::Name; m_page = 0; sortCells(); update(); });
-	connect(m_actSortSize, &QAction::triggered, this, [this] { m_sort = Sort::Size; m_page = 0; sortCells(); update(); });
-	connect(m_actSortKind, &QAction::triggered, this, [this] { m_sort = Sort::Kind; m_page = 0; sortCells(); update(); });
-	connect(m_actSortDate, &QAction::triggered, this, [this] { m_sort = Sort::Date; m_page = 0; sortCells(); update(); });
+	auto sort = [this](Sort sort) {
+		m_sort = sort;
+		setPage(0);
+		setSelected(-1);
+		sortCells();
+		update();
+	};
+	connect(m_actSortName, &QAction::triggered, this, [sort] { sort(Sort::Name); });
+	connect(m_actSortSize, &QAction::triggered, this, [sort] { sort(Sort::Size); });
+	connect(m_actSortKind, &QAction::triggered, this, [sort] { sort(Sort::Kind); });
+	connect(m_actSortDate, &QAction::triggered, this, [sort] { sort(Sort::Date); });
 
 	QMenu *special = menuBar()->addMenu(tr("Special"));
 	m_actSound = special->addAction(tr("Turn Sound Off"));
@@ -168,6 +181,8 @@ void FrontDeskWindow::buildMenus() {
 	m_actEject->setShortcut(QKeySequence(QStringLiteral("Ctrl+E")));
 	m_actEject->setEnabled(false);
 	special->addSeparator();
+	m_actFolders = special->addAction(tr("Folders…"));
+	connect(m_actFolders, &QAction::triggered, this, [this] { editFolders(); });
 	m_actSetup = special->addAction(tr("Go To Front Desk Setup…"));
 	connect(m_actSetup, &QAction::triggered, this, [this] { goToSetup(); });
 	m_actFinder = special->addAction(tr("Go To Finder"));
@@ -178,14 +193,8 @@ void FrontDeskWindow::buildMenus() {
 	m_actShutdown = special->addAction(tr("Shut Down"));
 	connect(m_actShutdown, &QAction::triggered, this, [this] { power(QStringLiteral("poweroff")); });
 
-	QMenu *panels = menuBar()->addMenu(tr("Panels"));
-	m_actPanelApps = panels->addAction(tr("Front Desk Items"));
-	m_actPanelUser = panels->addAction(tr("Documents"));
-	for (QAction *action : { m_actPanelApps, m_actPanelUser }) {
-		action->setCheckable(true);
-	}
-	connect(m_actPanelApps, &QAction::triggered, this, [this] { setPanel(Panel::Apps); });
-	connect(m_actPanelUser, &QAction::triggered, this, [this] { setPanel(Panel::Documents); });
+	m_panelsMenu = menuBar()->addMenu(tr("Panels"));
+	rebuildPanelsMenu();
 }
 
 void FrontDeskWindow::applyMenuLevel() {
@@ -202,39 +211,122 @@ void FrontDeskWindow::applyMenuLevel() {
 		m_viewMenu->menuAction()->setVisible(restricted);
 	}
 	m_actFinder->setVisible(m_settings.finder);
-	m_actClose->setEnabled(m_panel == Panel::Documents &&
-		QFileInfo(currentDir()).absoluteFilePath() != QFileInfo(m_settings.documents).absoluteFilePath());
-	m_actRename->setEnabled(m_selected >= 0 && m_panel == Panel::Documents);
-	m_actDelete->setEnabled(m_selected >= 0 && m_panel == Panel::Documents);
-	m_actGetInfo->setEnabled(m_selected >= 0);
-	m_actPanelApps->setChecked(m_panel == Panel::Apps);
-	m_actPanelUser->setChecked(m_panel == Panel::Documents);
+	const FolderPage *folder = activeFolder();
+	m_actClose->setEnabled(folder &&
+		QFileInfo(folder->current).absoluteFilePath() !=
+			QFileInfo(folder->root).absoluteFilePath());
+	m_actRename->setEnabled(folder && selected() >= 0);
+	m_actDelete->setEnabled(folder && selected() >= 0);
+	m_actGetInfo->setEnabled(selected() >= 0);
+	for (int i = 0; i < m_panelActions.size(); i++) {
+		m_panelActions[i]->setChecked(i == m_panel);
+	}
 }
 
 void FrontDeskWindow::reload() {
 	m_settings = FrontDeskSettings::load();
 	m_apps = AppCatalog::forCurrentUser();
-	m_docsDir = m_settings.documents;
-	loadDocuments();
-	m_page = 0;
+	if (!m_foldersLoaded) {
+		loadFolders();
+		m_hover = -1;
+		m_pressed = -1;
+		m_pressHit = {};
+		if (!appsPanel()) {
+			loadDocuments();
+		} else {
+			m_docs.clear();
+		}
+		buildCells();
+		applyMenuLevel();
+		update();
+		return;
+	}
+	reloadFolders();
+}
+
+void FrontDeskWindow::loadFolders() {
+	m_folderPages.clear();
+	for (const QString &root : frontDeskFolders()) {
+		m_folderPages.push_back({ root, root, 0, -1 });
+	}
+	m_foldersLoaded = true;
+	m_panel = m_folderPages.empty() ? 0 : 1;
+	rebuildPanelsMenu();
+}
+
+void FrontDeskWindow::reloadFolders() {
+	const bool wasApps = appsPanel();
+	const QString activeRoot = activeFolder() ? activeFolder()->root : QString();
+	std::vector<FolderPage> pages;
+	for (const QString &root : frontDeskFolders()) {
+		auto old = std::find_if(m_folderPages.begin(), m_folderPages.end(),
+			[&root](const FolderPage &page) { return page.root == root; });
+		if (old != m_folderPages.end()) {
+			pages.push_back(*old);
+		} else {
+			pages.push_back({ root, root, 0, -1 });
+		}
+	}
+	m_folderPages = std::move(pages);
+	m_foldersLoaded = true;
+	rebuildPanelsMenu();
+	if (wasApps) {
+		m_panel = 0;
+	} else {
+		int at = -1;
+		for (int i = 0; i < int(m_folderPages.size()); i++) {
+			if (m_folderPages[i].root == activeRoot) {
+				at = i;
+				break;
+			}
+		}
+		m_panel = at >= 0 ? at + 1 : (m_folderPages.empty() ? 0 : 1);
+	}
 	m_hover = -1;
-	m_selected = -1;
 	m_pressed = -1;
 	m_pressHit = {};
+	if (!appsPanel()) {
+		loadDocuments();
+	} else {
+		m_docs.clear();
+	}
 	buildCells();
-	m_actPanelUser->setText(m_settings.displayName.isEmpty()
-		? tr("Documents") : m_settings.displayName);
 	applyMenuLevel();
 	update();
 }
 
-void FrontDeskWindow::loadDocuments() {
-	QDir dir(m_docsDir);
-	if (!dir.exists()) {
-		QDir().mkpath(m_docsDir);
-		dir = QDir(m_docsDir);
+void FrontDeskWindow::rebuildPanelsMenu() {
+	if (!m_panelsMenu) {
+		return;
 	}
+	m_panelsMenu->clear();
+	m_panelActions.clear();
+	QAction *apps = m_panelsMenu->addAction(tr("Front Desk Items"));
+	apps->setCheckable(true);
+	connect(apps, &QAction::triggered, this, [this] { setPanel(0); });
+	m_panelActions << apps;
+	if (!m_folderPages.empty()) {
+		m_panelsMenu->addSeparator();
+	}
+	for (int i = 0; i < int(m_folderPages.size()); i++) {
+		QAction *action = m_panelsMenu->addAction(folderLabel(i));
+		action->setCheckable(true);
+		action->setToolTip(m_folderPages[i].root);
+		connect(action, &QAction::triggered, this, [this, i] { setPanel(i + 1); });
+		m_panelActions << action;
+	}
+}
+
+void FrontDeskWindow::loadDocuments() {
 	m_docs.clear();
+	const FolderPage *folder = activeFolder();
+	if (!folder) {
+		return;
+	}
+	const QDir dir(folder->current);
+	if (!dir.exists()) {
+		return;
+	}
 	const QFileInfoList list = dir.entryInfoList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot,
 		QDir::Name);
 	for (const QFileInfo &file : list) {
@@ -244,7 +336,7 @@ void FrontDeskWindow::loadDocuments() {
 
 void FrontDeskWindow::buildCells() {
 	m_cells.clear();
-	if (m_panel == Panel::Apps) {
+	if (appsPanel()) {
 		for (int i = 0; i < int(m_apps.size()); i++) {
 			m_cells.push_back({ m_apps[i].name, AppCatalog::iconFor(m_apps[i]), 0, i });
 		}
@@ -255,15 +347,15 @@ void FrontDeskWindow::buildCells() {
 		}
 	}
 	sortCells();
-	if (m_page >= pageCount()) {
-		m_page = qMax(0, pageCount() - 1);
+	if (page() >= pageCount()) {
+		setPage(qMax(0, pageCount() - 1));
 	}
 	applyMenuLevel();
 }
 
 void FrontDeskWindow::sortCells() {
 	std::sort(m_cells.begin(), m_cells.end(), [this](const Cell &a, const Cell &b) {
-		if (m_panel == Panel::Apps) {
+		if (appsPanel()) {
 			if (m_sort == Sort::Kind) {
 				return m_apps[a.index].entry < m_apps[b.index].entry;
 			}
@@ -307,19 +399,85 @@ void FrontDeskWindow::sortCells() {
 	});
 }
 
-void FrontDeskWindow::setPanel(Panel panel) {
+FrontDeskWindow::FolderPage *FrontDeskWindow::activeFolder() {
+	if (appsPanel() || m_panel < 0 || m_panel > int(m_folderPages.size())) {
+		return nullptr;
+	}
+	return &m_folderPages[m_panel - 1];
+}
+
+const FrontDeskWindow::FolderPage *FrontDeskWindow::activeFolder() const {
+	if (appsPanel() || m_panel < 0 || m_panel > int(m_folderPages.size())) {
+		return nullptr;
+	}
+	return &m_folderPages[m_panel - 1];
+}
+
+int FrontDeskWindow::page() const {
+	if (appsPanel()) {
+		return m_appPage;
+	}
+	const FolderPage *folder = activeFolder();
+	return folder ? folder->page : 0;
+}
+
+void FrontDeskWindow::setPage(int page) {
+	if (appsPanel()) {
+		m_appPage = page;
+	} else if (FolderPage *folder = activeFolder()) {
+		folder->page = page;
+	}
+}
+
+int FrontDeskWindow::selected() const {
+	if (appsPanel()) {
+		return m_appSelected;
+	}
+	const FolderPage *folder = activeFolder();
+	return folder ? folder->selected : -1;
+}
+
+void FrontDeskWindow::setSelected(int selected) {
+	if (appsPanel()) {
+		m_appSelected = selected;
+	} else if (FolderPage *folder = activeFolder()) {
+		folder->selected = selected;
+	}
+}
+
+void FrontDeskWindow::setPanel(int panel) {
+	if (panel < 0 || panel > int(m_folderPages.size())) {
+		return;
+	}
 	m_panel = panel;
-	m_page = 0;
 	m_hover = -1;
-	m_selected = -1;
 	m_pressed = -1;
 	m_pressHit = {};
+	if (!appsPanel()) {
+		loadDocuments();
+	} else {
+		m_docs.clear();
+	}
 	buildCells();
 	update();
 }
 
 QString FrontDeskWindow::currentDir() const {
-	return m_docsDir.isEmpty() ? m_settings.documents : m_docsDir;
+	const FolderPage *folder = activeFolder();
+	return folder ? folder->current : QString();
+}
+
+QString FrontDeskWindow::folderLabel(int index) const {
+	if (index < 0 || index >= int(m_folderPages.size())) {
+		return QString();
+	}
+	const QString home = m_settings.home.isEmpty() ? QDir::homePath() : m_settings.home;
+	const QString root = m_folderPages[index].root;
+	if (QFileInfo(root).absoluteFilePath() == QFileInfo(home).absoluteFilePath()) {
+		return m_settings.displayName.isEmpty() ? tr("Home") : m_settings.displayName;
+	}
+	const QString name = QFileInfo(root).fileName();
+	return name.isEmpty() ? root : name;
 }
 
 QRect FrontDeskWindow::outerRect() const {
@@ -333,14 +491,24 @@ QRect FrontDeskWindow::bodyRect() const {
 	return outerRect().adjusted(0, 24, -1, -1);
 }
 
-QRect FrontDeskWindow::appsTabRect() const {
+QVector<QRect> FrontDeskWindow::tabRects() const {
 	const QRect outer = outerRect();
-	return QRect(outer.x() + 10, outer.y(), 220, 24);
+	const int count = 1 + int(m_folderPages.size());
+	const int gap = 4;
+	const int total = qMax(1, outer.width() - 20);
+	const int width = qBound(1, (total - gap * (count - 1)) / qMax(1, count), 220);
+	QVector<QRect> rects;
+	int x = outer.x() + 10;
+	for (int i = 0; i < count; i++) {
+		rects << QRect(x, outer.y(), width, 24);
+		x += width + gap;
+	}
+	return rects;
 }
 
-QRect FrontDeskWindow::userTabRect() const {
-	const QRect outer = outerRect();
-	return QRect(outer.right() - 230, outer.y(), 220, 24);
+QRect FrontDeskWindow::tabRect(int index) const {
+	const QVector<QRect> rects = tabRects();
+	return index >= 0 && index < rects.size() ? rects[index] : QRect();
 }
 
 QRect FrontDeskWindow::gridRect() const {
@@ -375,11 +543,11 @@ int FrontDeskWindow::pageCount() const {
 }
 
 FrontDeskWindow::Hit FrontDeskWindow::hitTest(const QPoint &pos) const {
-	if (appsTabRect().contains(pos)) {
-		return { Hit::Type::AppsTab, -1 };
-	}
-	if (userTabRect().contains(pos)) {
-		return { Hit::Type::UserTab, -1 };
+	const QVector<QRect> tabs = tabRects();
+	for (int i = 0; i < tabs.size(); i++) {
+		if (tabs[i].contains(pos)) {
+			return { Hit::Type::Tab, i };
+		}
 	}
 	if (pageCount() > 1) {
 		if (pagePrevRect().contains(pos)) {
@@ -389,7 +557,7 @@ FrontDeskWindow::Hit FrontDeskWindow::hitTest(const QPoint &pos) const {
 			return { Hit::Type::Next, -1 };
 		}
 	}
-	const int start = m_page * 16;
+	const int start = page() * 16;
 	const int count = qMin(16, itemCount() - start);
 	for (int i = 0; i < count; i++) {
 		if (cellRect(i).contains(pos)) {
@@ -401,27 +569,25 @@ FrontDeskWindow::Hit FrontDeskWindow::hitTest(const QPoint &pos) const {
 
 void FrontDeskWindow::activate(const Hit &hit) {
 	switch (hit.type) {
-	case Hit::Type::AppsTab:
-		clickSound();
-		setPanel(Panel::Apps);
-		break;
-	case Hit::Type::UserTab:
-		clickSound();
-		setPanel(Panel::Documents);
+	case Hit::Type::Tab:
+		if (hit.index >= 0 && hit.index <= int(m_folderPages.size())) {
+			clickSound();
+			setPanel(hit.index);
+		}
 		break;
 	case Hit::Type::Prev:
-		if (m_page > 0) {
+		if (page() > 0) {
 			clickSound();
-			m_page--;
-			m_selected = -1;
+			setPage(page() - 1);
+			setSelected(-1);
 			update();
 		}
 		break;
 	case Hit::Type::Next:
-		if (m_page + 1 < pageCount()) {
+		if (page() + 1 < pageCount()) {
 			clickSound();
-			m_page++;
-			m_selected = -1;
+			setPage(page() + 1);
+			setSelected(-1);
 			update();
 		}
 		break;
@@ -429,8 +595,8 @@ void FrontDeskWindow::activate(const Hit &hit) {
 		if (hit.index < 0 || hit.index >= itemCount()) {
 			break;
 		}
-		m_selected = hit.index;
-		if (m_panel == Panel::Apps) {
+		setSelected(hit.index);
+		if (appsPanel()) {
 			launchApp(m_cells[hit.index].index);
 		} else {
 			openDocument(m_docs[m_cells[hit.index].index]);
@@ -450,7 +616,7 @@ void FrontDeskWindow::paintCanvas(QPainter &p) {
 	const QRect body = bodyRect();
 	p.fillRect(outer.translated(5, 5), QColor(0, 0, 0, 80));
 
-	const QColor panel = m_panel == Panel::Apps ? Art::appPanel() : Art::docPanel();
+	const QColor panel = appsPanel() ? Art::appPanel() : Art::docPanel();
 	const QPixmap tile = Art::stipple(panel, panel.darker(108));
 	p.fillRect(body, panel);
 	Art::fillStipple(p, body, tile);
@@ -482,23 +648,20 @@ void FrontDeskWindow::paintCanvas(QPainter &p) {
 			elide(Art::tabFont(), text, r.width() - 34));
 	};
 
-	const bool appsActive = m_panel == Panel::Apps;
-	if (appsActive) {
-		drawTab(userTabRect(), m_settings.displayName, false, false);
-		drawTab(appsTabRect(), tr("Front Desk Items"), true, true);
-	} else {
-		drawTab(appsTabRect(), tr("Front Desk Items"), true, false);
-		drawTab(userTabRect(), m_settings.displayName, false, true);
+	const QVector<QRect> tabs = tabRects();
+	for (int i = 0; i < tabs.size(); i++) {
+		drawTab(tabs[i], i == 0 ? tr("Front Desk Items") : folderLabel(i - 1),
+			i == 0, i == m_panel);
 	}
 
-	const int start = m_page * 16;
+	const int start = page() * 16;
 	const int count = qMin(16, itemCount() - start);
-	if (count == 0) {
+	if (count <= 0) {
 		p.setFont(Art::smallFont());
 		p.setPen(QColor(0x30, 0x30, 0x30));
-		const QString message = m_panel == Panel::Apps
+		const QString message = appsPanel()
 			? tr("No programs. An administrator can choose them in Front Desk Setup.")
-			: tr("No documents.");
+			: tr("No items in this folder.");
 		p.drawText(body.adjusted(30, 50, -30, -50), Qt::AlignCenter | Qt::TextWordWrap, message);
 	}
 	for (int i = 0; i < count; i++) {
@@ -514,7 +677,7 @@ void FrontDeskWindow::paintCanvas(QPainter &p) {
 			p.setPen(QPen(kBlack, 1));
 			p.drawRect(well.adjusted(12, 12, -12, -12));
 		}
-		Art::label(p, label, m_cells[item].label, item == m_selected);
+		Art::label(p, label, m_cells[item].label, item == selected());
 	}
 
 	if (pageCount() > 1) {
@@ -535,7 +698,7 @@ void FrontDeskWindow::paintCanvas(QPainter &p) {
 		p.setPen(QColor(0x30, 0x30, 0x30));
 		p.setFont(Art::smallFont());
 		p.drawText(QRect(body.left(), body.bottom() - 22, body.width(), 16),
-			Qt::AlignCenter, tr("Page %1 of %2").arg(m_page + 1).arg(pageCount()));
+			Qt::AlignCenter, tr("Page %1 of %2").arg(page() + 1).arg(pageCount()));
 	}
 }
 
@@ -545,7 +708,7 @@ void FrontDeskWindow::canvasMousePress(QMouseEvent *e) {
 	}
 	m_pressHit = hitTest(e->pos());
 	if (m_pressHit.type == Hit::Type::Item) {
-		m_selected = m_pressHit.index;
+		setSelected(m_pressHit.index);
 		m_pressed = m_pressHit.index;
 	}
 	update();
@@ -640,10 +803,14 @@ void FrontDeskWindow::openDocument(const QFileInfo &file) {
 }
 
 void FrontDeskWindow::openFolder(const QString &path) {
-	m_docsDir = path;
-	m_page = 0;
+	FolderPage *folder = activeFolder();
+	if (!folder) {
+		return;
+	}
+	folder->current = path;
+	folder->page = 0;
+	folder->selected = -1;
 	m_hover = -1;
-	m_selected = -1;
 	m_pressed = -1;
 	loadDocuments();
 	buildCells();
@@ -651,27 +818,33 @@ void FrontDeskWindow::openFolder(const QString &path) {
 }
 
 void FrontDeskWindow::goUp() {
-	if (m_panel != Panel::Documents) {
+	FolderPage *folder = activeFolder();
+	if (!folder) {
 		return;
 	}
-	const QString docs = QFileInfo(m_settings.documents).absoluteFilePath();
-	const QString current = QFileInfo(currentDir()).absoluteFilePath();
-	if (current == docs) {
+	const QString root = QFileInfo(folder->root).absoluteFilePath();
+	const QString current = QFileInfo(folder->current).absoluteFilePath();
+	if (current == root) {
 		return;
 	}
 	const QString parent = QFileInfo(current).absolutePath();
-	m_docsDir = parent.startsWith(docs) ? parent : docs;
-	m_page = 0;
+	folder->current = parent == root || parent.startsWith(root + '/') ? parent : root;
+	folder->page = 0;
+	folder->selected = -1;
 	m_hover = -1;
-	m_selected = -1;
+	m_pressed = -1;
 	loadDocuments();
 	buildCells();
 	update();
 }
 
 void FrontDeskWindow::newFolder() {
-	if (m_panel != Panel::Documents) {
-		setPanel(Panel::Documents);
+	if (appsPanel()) {
+		if (m_folderPages.empty()) {
+			alert(tr("New Folder"), tr("Add a folder in Special ▸ Folders… first."));
+			return;
+		}
+		setPanel(1);
 	}
 	bool ok = false;
 	const QString name = QInputDialog::getText(this, tr("New Folder"), tr("Name:"),
@@ -683,35 +856,38 @@ void FrontDeskWindow::newFolder() {
 		alert(tr("New Folder"), tr("A folder name can't contain “/” or “:”."));
 		return;
 	}
-	if (!QDir(currentDir()).mkdir(name.trimmed())) {
+	const QString base = currentDir();
+	if (base.isEmpty() || !QDir(base).mkdir(name.trimmed())) {
 		alert(tr("New Folder"), tr("“%1” couldn't be made.").arg(name.trimmed()));
 		return;
 	}
-	reload();
-	goUp();
-	openFolder(QDir(currentDir()).filePath(name.trimmed()));
+	loadDocuments();
+	buildCells();
+	openFolder(QDir(base).filePath(name.trimmed()));
 }
 
 QString FrontDeskWindow::selectedPath() const {
-	if (m_selected < 0 || m_selected >= itemCount()) {
+	const int at = selected();
+	if (at < 0 || at >= itemCount()) {
 		return QString();
 	}
-	const Cell &cell = m_cells[m_selected];
-	if (m_panel == Panel::Apps) {
+	const Cell &cell = m_cells[at];
+	if (appsPanel()) {
 		return m_apps[cell.index].desktopFile;
 	}
 	return m_docs[cell.index].absoluteFilePath();
 }
 
 void FrontDeskWindow::renameSelected() {
-	if (m_selected < 0 || m_selected >= itemCount()) {
+	const int at = selected();
+	if (at < 0 || at >= itemCount()) {
 		return;
 	}
-	if (m_panel == Panel::Apps) {
+	if (appsPanel()) {
 		alert(tr("Rename"), tr("Programs are chosen in Front Desk Setup."));
 		return;
 	}
-	const QFileInfo file = m_docs[m_cells[m_selected].index];
+	const QFileInfo file = m_docs[m_cells[at].index];
 	bool ok = false;
 	const QString name = QInputDialog::getText(this, tr("Rename"), tr("New name:"),
 		QLineEdit::Normal, file.fileName(), &ok);
@@ -726,14 +902,16 @@ void FrontDeskWindow::renameSelected() {
 		alert(tr("Rename"), tr("“%1” couldn't be renamed.").arg(file.fileName()));
 		return;
 	}
-	reload();
+	loadDocuments();
+	buildCells();
+	update();
 }
 
 void FrontDeskWindow::deleteSelected() {
-	if (m_selected < 0 || m_selected >= itemCount() || m_panel != Panel::Documents) {
+	if (selected() < 0 || selected() >= itemCount() || appsPanel()) {
 		return;
 	}
-	const QFileInfo file = m_docs[m_cells[m_selected].index];
+	const QFileInfo file = m_docs[m_cells[selected()].index];
 	if (QMessageBox::question(this, tr("Delete"),
 			tr("Delete “%1”?%2").arg(file.fileName(),
 				file.isDir() ? tr(" Everything in the folder goes too.") : QString()),
@@ -746,16 +924,19 @@ void FrontDeskWindow::deleteSelected() {
 		alert(tr("Delete"), tr("“%1” couldn't be deleted.").arg(file.fileName()));
 		return;
 	}
-	m_selected = -1;
-	reload();
+	setSelected(-1);
+	loadDocuments();
+	buildCells();
+	update();
 }
 
 void FrontDeskWindow::getInfo() {
 	const QString path = selectedPath();
 	if (path.isEmpty()) {
 		QMessageBox::information(this, tr("Get Info"),
-			tr("%1\n%2\n%3 items").arg(currentDir()).arg(m_settings.displayName)
-				.arg(itemCount()));
+			tr("%1\n%2\n%3 items")
+				.arg(appsPanel() ? tr("Front Desk Items") : currentDir())
+				.arg(m_settings.displayName).arg(itemCount()));
 		return;
 	}
 	const QFileInfo file(path);
@@ -773,8 +954,9 @@ void FrontDeskWindow::findItem() {
 	if (!ok || needle.trimmed().isEmpty()) {
 		return;
 	}
+	const QString dir = currentDir().isEmpty() ? QDir::homePath() : currentDir();
 	QStringList found;
-	QDirIterator it(currentDir(), QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot,
+	QDirIterator it(dir, QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot,
 		QDirIterator::Subdirectories);
 	while (it.hasNext() && found.size() < 20) {
 		it.next();
@@ -787,12 +969,109 @@ void FrontDeskWindow::findItem() {
 }
 
 void FrontDeskWindow::openOther() {
-	const QString path = QFileDialog::getOpenFileName(this, tr("Open Other"), currentDir());
+	const QString path = QFileDialog::getOpenFileName(this, tr("Open Other"),
+		currentDir().isEmpty() ? QDir::homePath() : currentDir());
 	if (path.isEmpty()) {
 		return;
 	}
 	if (!QDesktopServices::openUrl(QUrl::fromLocalFile(path))) {
 		alert(tr("Open Other"), tr("“%1” couldn't be opened.").arg(path));
+	}
+}
+
+void FrontDeskWindow::editFolders() {
+	QDialog dialog(this);
+	dialog.setWindowTitle(tr("Folders"));
+	auto *layout = new QVBoxLayout(&dialog);
+	auto *explain = new QLabel(tr("Folders shown on the Front Desk panel. Each one gets its own page."),
+		&dialog);
+	explain->setWordWrap(true);
+	layout->addWidget(explain);
+	auto *list = new QListWidget(&dialog);
+	for (int i = 0; i < int(m_folderPages.size()); i++) {
+		auto *item = new QListWidgetItem(
+			folderLabel(i) + QStringLiteral("  —  ") + m_folderPages[i].root, list);
+		item->setData(Qt::UserRole, m_folderPages[i].root);
+	}
+	layout->addWidget(list, 1);
+	auto *buttons = new QHBoxLayout();
+	auto *add = new QPushButton(tr("Add Folder…"), &dialog);
+	auto *remove = new QPushButton(tr("Remove"), &dialog);
+	auto *up = new QPushButton(tr("Move Up"), &dialog);
+	auto *down = new QPushButton(tr("Move Down"), &dialog);
+	buttons->addWidget(add);
+	buttons->addWidget(remove);
+	buttons->addWidget(up);
+	buttons->addWidget(down);
+	buttons->addStretch(1);
+	layout->addLayout(buttons);
+	auto *box = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+	layout->addWidget(box);
+	connect(box, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+	connect(box, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+	const auto updateButtons = [list, remove, up, down] {
+		const int row = list->currentRow();
+		remove->setEnabled(row >= 0);
+		up->setEnabled(row > 0);
+		down->setEnabled(row >= 0 && row + 1 < list->count());
+	};
+	connect(list, &QListWidget::currentRowChanged, &dialog, [updateButtons](int) { updateButtons(); });
+	updateButtons();
+	connect(add, &QPushButton::clicked, &dialog, [list, &dialog] {
+		const QString path = QFileDialog::getExistingDirectory(&dialog, tr("Choose a Folder"),
+			QDir::homePath());
+		if (path.isEmpty()) {
+			return;
+		}
+		const QString clean = QFileInfo(path).absoluteFilePath();
+		for (int i = 0; i < list->count(); i++) {
+			if (list->item(i)->data(Qt::UserRole).toString() == clean) {
+				list->setCurrentRow(i);
+				return;
+			}
+		}
+		auto *item = new QListWidgetItem(QFileInfo(clean).fileName() + QStringLiteral("  —  ") + clean,
+			list);
+		item->setData(Qt::UserRole, clean);
+		list->setCurrentItem(item);
+	});
+	connect(remove, &QPushButton::clicked, &dialog, [list, updateButtons] {
+		delete list->takeItem(list->currentRow());
+		updateButtons();
+	});
+	connect(up, &QPushButton::clicked, &dialog, [list, updateButtons] {
+		const int row = list->currentRow();
+		if (row > 0) {
+			list->insertItem(row - 1, list->takeItem(row));
+			list->setCurrentRow(row - 1);
+		}
+		updateButtons();
+	});
+	connect(down, &QPushButton::clicked, &dialog, [list, updateButtons] {
+		const int row = list->currentRow();
+		if (row >= 0 && row + 1 < list->count()) {
+			list->insertItem(row + 1, list->takeItem(row));
+			list->setCurrentRow(row + 1);
+		}
+		updateButtons();
+	});
+	dialog.resize(560, 380);
+	if (dialog.exec() != QDialog::Accepted) {
+		return;
+	}
+	QStringList paths;
+	for (int i = 0; i < list->count(); i++) {
+		paths << list->item(i)->data(Qt::UserRole).toString();
+	}
+	if (!setFrontDeskFolders(paths)) {
+		alert(tr("Folders"), tr("The folder list couldn't be saved."));
+		return;
+	}
+	const auto windows = QApplication::allWidgets();
+	for (QWidget *widget : windows) {
+		if (auto *panel = dynamic_cast<FrontDeskWindow *>(widget)) {
+			panel->reloadFolders();
+		}
 	}
 }
 
