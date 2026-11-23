@@ -4,6 +4,9 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QSaveFile>
+#include <QStandardPaths>
+#include <QTextStream>
 
 #include <pwd.h>
 #include <unistd.h>
@@ -33,15 +36,11 @@ FrontDeskSettings FrontDeskSettings::load(const QString &user) {
 		s.home = QString::fromLocal8Bit(pw->pw_dir);
 		const QString gecos = QString::fromLocal8Bit(pw->pw_gecos).section(',', 0, 0).trimmed();
 		s.displayName = gecos.isEmpty() ? s.user : gecos;
-		s.documents = QDir(s.home).filePath(QStringLiteral("Documents"));
 	} else {
 		s.displayName = s.user;
 	}
 	if (s.home.isEmpty()) {
 		s.home = QDir::homePath();
-	}
-	if (s.documents.isEmpty()) {
-		s.documents = QDir(s.home).filePath(QStringLiteral("Documents"));
 	}
 
 	QFile file(QDir(configDir()).filePath(QStringLiteral("frontdesk/") + s.user));
@@ -76,7 +75,60 @@ FrontDeskSettings FrontDeskSettings::load(const QString &user) {
 			s.capture = value == QStringLiteral("on");
 		} else if (key == QStringLiteral("zac-menu")) {
 			s.zacMenu = value == QStringLiteral("on");
+		} else if (key == QStringLiteral("screens")) {
+			s.eachScreen = value == QStringLiteral("each");
 		}
 	}
 	return s;
+}
+
+QString frontDeskFoldersFile() {
+	const QByteArray override = qgetenv("ZACOS9_FRONTDESK_FOLDERS");
+	if (!override.isEmpty()) {
+		return QString::fromUtf8(override);
+	}
+	return QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation) +
+		QStringLiteral("/zacos9/frontdesk-folders");
+}
+
+QStringList frontDeskFolders() {
+	const QString file = frontDeskFoldersFile();
+	if (!QFile::exists(file)) {
+		return { QDir::homePath() };
+	}
+	QStringList paths;
+	QFile input(file);
+	if (!input.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		return paths;
+	}
+	while (!input.atEnd()) {
+		QString line = QString::fromUtf8(input.readLine()).trimmed();
+		if (line.isEmpty() || line.startsWith('#')) {
+			continue;
+		}
+		if (line.startsWith(QStringLiteral("~/"))) {
+			line = QDir::home().filePath(line.mid(2));
+		}
+		const QString path = QFileInfo(line).absoluteFilePath();
+		if (!path.isEmpty() && !paths.contains(path)) {
+			paths << path;
+		}
+	}
+	return paths;
+}
+
+bool setFrontDeskFolders(const QStringList &paths) {
+	const QFileInfo file(frontDeskFoldersFile());
+	if (!QDir().mkpath(file.absolutePath())) {
+		return false;
+	}
+	QSaveFile output(file.absoluteFilePath());
+	if (!output.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		return false;
+	}
+	QTextStream stream(&output);
+	for (const QString &path : paths) {
+		stream << QDir::cleanPath(path) << '\n';
+	}
+	return output.commit();
 }

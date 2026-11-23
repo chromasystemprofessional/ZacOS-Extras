@@ -16,7 +16,7 @@ chosen programs** allowlist is the list of programs on the panel.
 | User | A Unix account, selected at the login window |
 | Welcome screen | The Front Desk-skinned login window |
 | Front Desk Items | The Applications folder's user-installed programs, chosen in the account's malcontent allowlist |
-| User documents | `~/Documents` |
+| Folder pages | The home folder by default; the user chooses them in **Special ▸ Folders…** |
 | “Go To Front Desk Setup” | `zacos9-frontdesk-setup`, also **Control Panels ▸ Front Desk Setup** |
 | Quit | Log Out, back to the login window |
 | Restricted Finder | Puppy Mode |
@@ -51,6 +51,8 @@ For an account with Front Desk enabled, `zacos9-session` sets
 
 - the menu bar starts with a minimal Zac menu, or all its items when the
   account has `zac-menu=on`;
+- with `screens=each`, every display gets its own panel and its own front
+  program, though there is still one pointer and keyboard;
 - `zacos9-frontdesk` starts instead of the Sniffer, and The Collar stays
   visible (and its hot key works);
 - the Front Desk panel fills the usable screen area behind the menu bar;
@@ -76,14 +78,24 @@ finder=on|off
 speech=on|off
 capture=on|off
 zac-menu=on|off
+screens=one|each
 ```
 
 `menus` is the Front Desk panel's own menus. `zac-menu=on` gives the menu
 bar's Zac menu every item (Control Panels, Software, Old Dog and the rest);
-it is off by default because it is a way out of the panel.
+it is off by default because it is a way out of the panel. `screens=each`
+gives every display its own panel and its own front program; the pointer and
+keyboard move between them.
 
 `zacos9-accounts-helper frontdesk-settings USER KEY=VALUE…` writes validated
-settings. Only an administrator can change them. The program list is the
+settings. Only an administrator can change them.
+
+The user's own folder pages are separate: the panel starts on the home
+folder, and **Special ▸ Folders…** adds, removes and reorders folders, each
+with its own tab. They are kept in `~/.config/zacos9/frontdesk-folders`, one
+path a line; a missing file means the home folder alone.
+
+The program list is the
 account's existing malcontent allowlist, not a Front Desk file.
 
 ## Build and test

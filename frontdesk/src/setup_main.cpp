@@ -242,6 +242,11 @@ public:
 		m_zacMenu->setToolTip(tr("The menu bar's Zac menu, with Control Panels, Software, "
 			"Old Dog and the rest. This gives the person a way out of the Front Desk panel."));
 		form3->addRow(QString(), m_zacMenu);
+		m_eachScreen = new QCheckBox(tr("One panel per screen"), page3);
+		m_eachScreen->setChecked(m_settings.eachScreen);
+		m_eachScreen->setToolTip(tr("Each display gets its own Front Desk panel and its own "
+			"running program. One pointer and keyboard move between them."));
+		form3->addRow(QString(), m_eachScreen);
 		m_speech = new QCheckBox(tr("Speak button names"), page3);
 		m_speech->setChecked(m_settings.speech);
 		form3->addRow(QString(), m_speech);
@@ -342,6 +347,7 @@ private:
 			args << QStringLiteral("save-removable=") + (m_removable->isChecked() ? QStringLiteral("on") : QStringLiteral("off"));
 			args << QStringLiteral("finder=") + (m_finder->isChecked() ? QStringLiteral("on") : QStringLiteral("off"));
 			args << QStringLiteral("zac-menu=") + (m_zacMenu->isChecked() ? QStringLiteral("on") : QStringLiteral("off"));
+			args << QStringLiteral("screens=") + (m_eachScreen->isChecked() ? QStringLiteral("each") : QStringLiteral("one"));
 			args << QStringLiteral("speech=") + (m_speech->isChecked() ? QStringLiteral("on") : QStringLiteral("off"));
 			args << QStringLiteral("capture=") + (m_capture->isChecked() ? QStringLiteral("on") : QStringLiteral("off"));
 		} else {
@@ -398,6 +404,7 @@ private:
 	QComboBox *m_menus = nullptr;
 	QComboBox *m_save = nullptr;
 	QCheckBox *m_zacMenu = nullptr;
+	QCheckBox *m_eachScreen = nullptr;
 	QCheckBox *m_speech = nullptr;
 	QCheckBox *m_removable = nullptr;
 	QCheckBox *m_capture = nullptr;
