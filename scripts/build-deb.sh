@@ -55,9 +55,11 @@ mkdir -p "$stage/DEBIAN"
 	printf 'Maintainer: %s <%s>\n' "$(git config user.name)" "$(git config user.email)"
 	printf 'Section: x11\nPriority: optional\n'
 	printf 'Installed-Size: %s\n' "$(du -sk --exclude=DEBIAN "$stage" | cut -f1)"
-	printf 'Depends: %s\n' "${shlibs:+$shlibs, }$depends"
+	deps=$shlibs
+	[ -z "${depends:-}" ] || deps=${deps:+$deps, }$depends
+	[ -z "$deps" ] || printf 'Depends: %s\n' "$deps"
 	[ -z "${recommends:-}" ] || printf 'Recommends: %s\n' "$recommends"
-	printf 'Homepage: https://github.com/chromasystemprofessional/ZacOS-Extras\n'
+	printf 'Homepage: %s\n' "${homepage:-https://github.com/chromasystemprofessional/ZacOS-Extras}"
 	printf 'Description: %s\n' "$summary"
 	printf '%s\n' "$description" | sed 's/^/ /'
 } >"$stage/DEBIAN/control"

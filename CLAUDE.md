@@ -17,6 +17,7 @@ has its own CLAUDE.md; read it before touching anything there).
 | └ Sound server through `pactl`: USB inputs, loopbacks, output, `subscribe` | `turntable/src/turntableaudio.*` | |
 | └ Module, menu, record icon, playing again when the turntable appears | `turntable/src/turntablemodule.*` | |
 | Turntable tests (stand-in `pactl` + private session bus) | `turntable/tests/` | Python (dbus-python) |
+| Netzac Navigator (`zacos9-netzac`), an upstream import | `netzac/` | C++ / Qt6 WebEngine |
 | Build and install helpers | `scripts/` | sh |
 
 ## Rules

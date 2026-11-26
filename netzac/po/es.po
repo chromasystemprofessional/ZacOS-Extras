@@ -1,0 +1,1210 @@
+# Spanish translations for zacos9-netzac.
+# Copyright (C) 2026 Netzac Navigator Contributors
+# This file is distributed under the same license as the zacos9-netzac package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: zacos9-netzac 4.0.8\n"
+"Report-Msgid-Bugs-To: https://github.com/guimaraeslucas/netzac/issues\n"
+"POT-Creation-Date: 2026-11-22 10:30-0300\n"
+"PO-Revision-Date: 2026-11-22 10:30-0300\n"
+"Last-Translator: Netzac Navigator Contributors\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "%1 (%2 item(s))"
+msgstr "%1 (%2 elemento(s))"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "(Empty folder)"
+msgstr "(Carpeta vacía)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "(Untitled)"
+msgstr "(Sin título)"
+
+#: shell/netzac/preferences.cpp
+msgid "68k News"
+msgstr "68k News"
+
+#: shell/netzac/preferences.cpp
+msgid "68k.news"
+msgstr "68k.news"
+
+#: shell/netzac/bookmarks.cpp
+msgid "68k.news - Headlines"
+msgstr "68k.news - Headlines"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "<div class=\"credits-box\" style=\"margin-top:0;\"><h2>Netzac Chat</h2><p style=\"margin-bottom:0;\">To configure this button to open your chat service, open <b>Edit &rsaquo; Preferences &rsaquo; Quick Links</b> and set the <b>Chat URL</b>.</p></div>"
+msgstr "<div class=\"credits-box\" style=\"margin-top:0;\"><h2>Netzac Chat</h2><p style=\"margin-bottom:0;\">Para configurar este botón para abrir su servicio de chat, abra <b>Editar &rsaquo; Preferencias &rsaquo; Enlaces Rápidos</b> y establezca la <b>URL de Chat</b>.</p></div>"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "<div class=\"credits-box\" style=\"margin-top:0;\"><h2>Netzac Git</h2><p style=\"margin-bottom:0;\">To configure this button to open your Git forge (for example GitHub, GitLab or Gitea), open <b>Edit &rsaquo; Preferences &rsaquo; Quick Links</b> and set the <b>Git URL</b>.</p></div>"
+msgstr "<div class=\"credits-box\" style=\"margin-top:0;\"><h2>Netzac Git</h2><p style=\"margin-bottom:0;\">Para configurar este botón para abrir su servicio Git (por ejemplo GitHub, GitLab o Gitea), abra <b>Editar &rsaquo; Preferencias &rsaquo; Enlaces Rápidos</b> y establezca la <b>URL de Git</b>.</p></div>"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "<div class=\"credits-box\" style=\"margin-top:0;\"><h2>Netzac Mail</h2><p style=\"margin-bottom:0;\">To configure this button to open your mail link (for example Gmail or webmail), open <b>Edit &rsaquo; Preferences &rsaquo; Quick Links</b> and set the <b>Mail URL</b>.</p></div>"
+msgstr "<div class=\"credits-box\" style=\"margin-top:0;\"><h2>Netzac Correo</h2><p style=\"margin-bottom:0;\">Para configurar este botón para abrir su correo (por ejemplo Gmail o webmail), abra <b>Editar &rsaquo; Preferencias &rsaquo; Enlaces Rápidos</b> y establezca la <b>URL de Correo</b>.</p></div>"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "<p>Unknown built-in Navigator location.</p>"
+msgstr "<p>Ubicación interna de Navigator desconocida.</p>"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "<p>Welcome aboard <b>Netzac Navigator 1.0</b> running on <b>ZacOS 9</b>.</p><p>Quick links to explore the classic &amp; text-friendly Web:</p><div class=\"cards\"><a class=\"card\" href=\"https://frogfind.com\"><strong>FrogFind!</strong><span>Classic search engine for retro browsers</span></a><a class=\"card\" href=\"https://wiby.me\"><strong>Wiby</strong><span>Search engine for classic web pages</span></a><a class=\"card\" href=\"http://68k.news\"><strong>68k.news</strong><span>Fast headlines formatted for classic Macs</span></a><a class=\"card\" href=\"https://theoldnet.com\"><strong>The Old Net</strong><span>Browse snapshots of the 1990s web</span></a></div><div class=\"credits-box\"><h2>Credits &amp; Community</h2><p>Netzac started as an initial idea by <b>Lucas Guimarães</b>. We hope to count on the full support of the <b>ZacOS 9</b> community for contributions, ideas, and pull requests at <a href=\"https://github.com/guimaraeslucas/netzac\">github.com/guimaraeslucas/netzac</a>.</p><p style=\"margin-bottom:0;\">Special thanks to <b>Adam Lawson (@chromasystemprofessional)</b> for creating this incredible ZacOS 9 project.</p></div>"
+msgstr "<p>Bienvenido a bordo de <b>Netzac Navigator 1.0</b> ejecutándose en <b>ZacOS 9</b>.</p><p>Enlaces rápidos para explorar la Web clásica y ligera:</p><div class=\"cards\"><a class=\"card\" href=\"https://frogfind.com\"><strong>FrogFind!</strong><span>Buscador clásico para navegadores retro</span></a><a class=\"card\" href=\"https://wiby.me\"><strong>Wiby</strong><span>Buscador para páginas web clásicas</span></a><a class=\"card\" href=\"http://68k.news\"><strong>68k.news</strong><span>Titulares rápidos adaptados para Macs clásicos</span></a><a class=\"card\" href=\"https://theoldnet.com\"><strong>The Old Net</strong><span>Explora archivos de la web de los años 90</span></a></div><div class=\"credits-box\"><h2>Créditos y Comunidad</h2><p>Netzac nació como una idea inicial de <b>Lucas Guimarães</b>. Esperamos contar con todo el apoyo de la comunidad de <b>ZacOS 9</b> para contribuciones, ideas y pull requests en <a href=\"https://github.com/guimaraeslucas/netzac\">github.com/guimaraeslucas/netzac</a>.</p><p style=\"margin-bottom:0;\">Agradecimiento especial a <b>Adam Lawson (@chromasystemprofessional)</b> por crear este increíble proyecto ZacOS 9.</p></div>"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "<ul class=\"shortcut-list\"><li><span><b>Collapse Toolbars</b></span><span>Click the ribbed grip on the left of any toolbar</span></li><li><span><b>Open Page</b></span><span><code>Ctrl+O</code></span></li><li><span><b>New / Close Tab</b></span><span><code>Ctrl+T</code> / <code>Ctrl+W</code></span></li><li><span><b>Find in Page / Find Again</b></span><span><code>Ctrl+F</code> or <code>F4</code> / <code>Ctrl+G</code></span></li><li><span><b>Zoom In / Out / Reset</b></span><span><code>Ctrl++</code> / <code>Ctrl+-</code> / <code>Ctrl+0</code></span></li><li><span><b>Add / Manage Bookmarks</b></span><span><code>Ctrl+D</code> / <code>Ctrl+B</code></span></li><li><span><b>Reload / Stop</b></span><span><code>Ctrl+R</code> or <code>F5</code> / <code>Esc</code></span></li><li><span><b>Full Screen</b></span><span><code>F11</code></span></li><li><span><b>Calm Mode</b></span><span><code>Ctrl+Shift+C</code></span></li><li><span><b>Page Source / Info</b></span><span><code>Ctrl+U</code> / <code>Ctrl+I</code></span></li></ul>"
+msgstr "<ul class=\"shortcut-list\"><li><span><b>Contraer barras de herramientas</b></span><span>Haz clic en el asa estriada a la izquierda de cualquier barra</span></li><li><span><b>Abrir página</b></span><span><code>Ctrl+O</code></span></li><li><span><b>Nueva / Cerrar pestaña</b></span><span><code>Ctrl+T</code> / <code>Ctrl+W</code></span></li><li><span><b>Buscar / Buscar de nuevo</b></span><span><code>Ctrl+F</code> o <code>F4</code> / <code>Ctrl+G</code></span></li><li><span><b>Acercar / Alejar / Restablecer zoom</b></span><span><code>Ctrl++</code> / <code>Ctrl+-</code> / <code>Ctrl+0</code></span></li><li><span><b>Añadir / Gestionar marcadores</b></span><span><code>Ctrl+D</code> / <code>Ctrl+B</code></span></li><li><span><b>Recargar / Detener</b></span><span><code>Ctrl+R</code> o <code>F5</code> / <code>Esc</code></span></li><li><span><b>Pantalla completa</b></span><span><code>F11</code></span></li><li><span><b>Modo Calma</b></span><span><code>Ctrl+Shift+C</code></span></li><li><span><b>Código fuente / Info de página</b></span><span><code>Ctrl+U</code> / <code>Ctrl+I</code></span></li></ul>"
+
+#: shell/netzac/dialogs.cpp shell/netzac/netzacwindow.cpp
+msgid "About Netzac"
+msgstr "Acerca de Netzac"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "About Netzac..."
+msgstr "Acerca de Netzac..."
+
+#: shell/netzac/dialogs.cpp
+msgid "Accept all cookies"
+msgstr "Aceptar todas las cookies"
+
+#: shell/netzac/dialogs.cpp
+msgid "Accept only cookies from originating server"
+msgstr "Aceptar solo cookies del servidor de origen"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Add Bookmark"
+msgstr "Añadir marcador"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Add Bookmark for Link"
+msgstr "Añadir enlace a marcadores"
+
+#: shell/netzac/dialogs.cpp
+msgid "Add Site to Folder"
+msgstr "Añadir sitio a la carpeta"
+
+#: shell/netzac/dialogs.cpp
+msgid "Add Toolbar Button"
+msgstr "Añadir botón a la barra"
+
+#: shell/netzac/dialogs.cpp
+msgid "Add"
+msgstr "Añadir"
+
+#: shell/netzac/dialogs.cpp
+msgid "All cookies cleared."
+msgstr "Todas las cookies eliminadas."
+
+#: shell/netzac/dialogs.cpp
+msgid "Apply on all non-excluded sites"
+msgstr "Aplicar en todos los sitios no excluidos"
+
+#: shell/netzac/dialogs.cpp
+msgid "Automatically load images"
+msgstr "Cargar imágenes automáticamente"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Back"
+msgstr "Atrás"
+
+#: shell/netzac/preferences.cpp
+msgid "Bing"
+msgstr "Bing"
+
+#: shell/netzac/dialogs.cpp
+msgid "Bookmark Files (*.html *.htm Bookmarks *.json);;All Files (*)"
+msgstr "Archivos de marcadores (*.html *.htm Bookmarks *.json);;Todos los archivos (*)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Bookmarked: %1"
+msgstr "Añadido a marcadores: %1"
+
+#: shell/netzac/dialogs.cpp shell/netzac/netzacwindow.cpp
+msgid "Bookmarks"
+msgstr "Marcadores"
+
+#: shell/netzac/dialogs.cpp
+msgid "Bookmarks exported in Chrome/Firefox HTML format."
+msgstr "Marcadores exportados en formato HTML de Chrome/Firefox."
+
+#: shell/netzac/dialogs.cpp
+msgid "Browser Cache Storage:"
+msgstr "Almacenamiento de caché del navegador:"
+
+#: shell/netzac/dialogs.cpp
+msgid "Browser Identity Preset:"
+msgstr "Identidad del navegador:"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Built-in Netzac Navigator local document."
+msgstr "Documento local integrado de Netzac Navigator."
+
+#: shell/netzac/dialogs.cpp
+msgid "Button Label:"
+msgstr "Etiqueta del botón:"
+
+#: shell/netzac/preferences.cpp
+msgid "CNN Lite"
+msgstr "CNN Lite"
+
+#: shell/netzac/dialogs.cpp
+msgid "Cache"
+msgstr "Caché"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Calm"
+msgstr "Calma"
+
+#: shell/netzac/dialogs.cpp shell/netzac/netzacwindow.cpp
+msgid "Calm Mode"
+msgstr "Modo Calma"
+
+#: shell/netzac/dialogs.cpp shell/netzac/netzacwindow.cpp
+msgid "Cancel"
+msgstr "Cancelar"
+
+#: shell/netzac/dialogs.cpp
+msgid "Category:"
+msgstr "Categoría:"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Chat"
+msgstr "Chat"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Chat (Ctrl+3)"
+msgstr "Chat (Ctrl+3)"
+
+#: shell/netzac/dialogs.cpp
+msgid "Chat URL (e.g. https://app.element.io):"
+msgstr "URL del chat (ej. https://app.element.io):"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Choose File..."
+msgstr "Elegir archivo..."
+
+#: shell/netzac/preferences.cpp
+msgid "Chrome (Linux) — Default"
+msgstr "Chrome (Linux) — Predeterminado"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Classic Left Tabs"
+msgstr "Pestañas clásicas a la izquierda"
+
+#: shell/netzac/dialogs.cpp
+msgid "Clean full page (keep layout, remove distractions)"
+msgstr "Limpiar página completa (mantener diseño, quitar distracciones)"
+
+#: shell/netzac/dialogs.cpp
+msgid "Clear Cache Now"
+msgstr "Limpiar caché ahora"
+
+#: shell/netzac/dialogs.cpp
+msgid "Clear Cookies Now"
+msgstr "Limpiar cookies ahora"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Clear History"
+msgstr "Borrar historial"
+
+#: shell/netzac/dialogs.cpp shell/netzac/netzacwindow.cpp
+msgid "Close"
+msgstr "Cerrar"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Close Tab"
+msgstr "Cerrar pestaña"
+
+#: shell/netzac/widgets.cpp
+msgid "Collapse %1"
+msgstr "Contraer %1"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Navigator Chat Quick Link"
+msgstr "Enlace rápido de Chat de Navigator"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Navigator Git Quick Link"
+msgstr "Enlace rápido de Git de Navigator"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Navigator Mail Quick Link"
+msgstr "Enlace rápido de Correo de Navigator"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Navigator Platinum Edition on ZacOS 9"
+msgstr "Edición Platinum de Navigator en ZacOS 9"
+
+#: shell/netzac/dialogs.cpp
+msgid "Configure Proxies to Access the Internet:"
+msgstr "Configurar proxies para acceder a Internet:"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Connecting to %1..."
+msgstr "Conectando a %1..."
+
+#: shell/netzac/dialogs.cpp
+msgid "Continue where I left off"
+msgstr "Continuar donde lo dejé"
+
+#: shell/netzac/dialogs.cpp
+msgid "Cookie Permissions:"
+msgstr "Permisos de cookies:"
+
+#: shell/netzac/dialogs.cpp
+msgid "Cookies"
+msgstr "Cookies"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Copy"
+msgstr "Copiar"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Copy Image Location"
+msgstr "Copiar dirección de imagen"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Copy Link Location"
+msgstr "Copiar dirección del enlace"
+
+#: shell/netzac/dialogs.cpp
+msgid "Could not write bookmarks to the selected file."
+msgstr "No se pudieron guardar los marcadores en el archivo seleccionado."
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Current page URL (click to bookmark)"
+msgstr "URL de la página actual (clic para guardar)"
+
+#: shell/netzac/preferences.cpp
+msgid "Custom"
+msgstr "Personalizado"
+
+#: shell/netzac/dialogs.cpp
+msgid "Customize Personal Toolbar buttons & folders:"
+msgstr "Personalizar botones y carpetas de la Barra Personal:"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Cut"
+msgstr "Cortar"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Default Browser"
+msgstr "Navegador predeterminado"
+
+#: shell/netzac/dialogs.cpp
+msgid "Default Browser:"
+msgstr "Navegador predeterminado:"
+
+#: shell/netzac/dialogs.cpp
+msgid "Default Search Engine:"
+msgstr "Motor de búsqueda predeterminado:"
+
+#: shell/netzac/dialogs.cpp
+msgid "Delete"
+msgstr "Eliminar"
+
+#: shell/netzac/dialogs.cpp
+msgid "Direct connection to the Internet"
+msgstr "Conexión directa a Internet"
+
+#: shell/netzac/dialogs.cpp
+msgid "Disable Cache"
+msgstr "Desactivar caché"
+
+#: shell/netzac/dialogs.cpp
+msgid "Disable cookies"
+msgstr "Desactivar cookies"
+
+#: shell/netzac/dialogs.cpp
+msgid "Disk Cache"
+msgstr "Caché en disco"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Document: Done"
+msgstr "Documento: Terminado"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Document: Done — Calm Mode active"
+msgstr "Documento: Terminado — Modo Calma activo"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Document: Done — Calm Mode skipped (JavaScript page)"
+msgstr "Documento: Terminado — Modo Calma omitido (página JavaScript)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Document: Done — Calm Mode skipped (built-in page)"
+msgstr "Documento: Terminado — Modo Calma omitido (página interna)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Document: Done — Calm Mode skipped (excluded host)"
+msgstr "Documento: Terminado — Modo Calma omitido (sitio excluido)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Document: Done — Calm Mode skipped (interactive web app)"
+msgstr "Documento: Terminado — Modo Calma omitido (app web interactiva)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Document: Done — Calm Reader active"
+msgstr "Documento: Terminado — Lector Calma activo"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Done"
+msgstr "Hecho"
+
+#: shell/netzac/dialogs.cpp
+msgid "Down"
+msgstr "Bajar"
+
+#: shell/netzac/preferences.cpp
+msgid "DuckDuckGo"
+msgstr "DuckDuckGo"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Edit"
+msgstr "Editar"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Edit Bookmarks..."
+msgstr "Editar marcadores..."
+
+#: shell/netzac/dialogs.cpp
+msgid "Edit Folder Site"
+msgstr "Editar sitio de carpeta"
+
+#: shell/netzac/dialogs.cpp
+msgid "Edit Toolbar Button"
+msgstr "Editar botón de barra"
+
+#: shell/netzac/dialogs.cpp
+msgid "Elements to Remove & Clean:"
+msgstr "Elementos a eliminar y limpiar:"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Encrypted connection (HTTPS) — Security padlock is locked."
+msgstr "Conexión cifrada (HTTPS) — El candado de seguridad está cerrado."
+
+#: shell/netzac/dialogs.cpp
+msgid "Excluded hosts (comma-separated, includes subdomains):"
+msgstr "Dominios excluidos (separados por comas, incluye subdominios):"
+
+#: shell/netzac/widgets.cpp
+msgid "Expand %1"
+msgstr "Expandir %1"
+
+#: shell/netzac/dialogs.cpp
+msgid "Export Bookmarks"
+msgstr "Exportar marcadores"
+
+#: shell/netzac/dialogs.cpp
+msgid "Export Bookmarks (Chrome / Firefox HTML)"
+msgstr "Exportar marcadores (HTML Chrome / Firefox)"
+
+#: shell/netzac/dialogs.cpp
+msgid "Export..."
+msgstr "Exportar..."
+
+#: shell/netzac/netzacwindow.cpp
+msgid "File"
+msgstr "Archivo"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Filter by title or URL..."
+msgstr "Filtrar por título o URL..."
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Find"
+msgstr "Buscar"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Find Again"
+msgstr "Buscar de nuevo"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Find Next"
+msgstr "Buscar siguiente"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Find in Page..."
+msgstr "Buscar en la página..."
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Find in current page"
+msgstr "Buscar en la página actual"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Find:"
+msgstr "Buscar:"
+
+#: shell/netzac/preferences.cpp
+msgid "Firefox (Linux)"
+msgstr "Firefox (Linux)"
+
+#: shell/netzac/dialogs.cpp
+msgid "Focus on main text only (Firefox-style Reader Mode)"
+msgstr "Enfocar solo en el texto principal (Modo Lectura)"
+
+#: shell/netzac/dialogs.cpp
+msgid "Folder"
+msgstr "Carpeta"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Forward"
+msgstr "Adelante"
+
+#: shell/netzac/preferences.cpp
+msgid "FrogFind"
+msgstr "FrogFind"
+
+#: shell/netzac/preferences.cpp
+msgid "FrogFind!"
+msgstr "FrogFind!"
+
+#: shell/netzac/preferences.cpp
+msgid "FrogFind! (Classic Web)"
+msgstr "FrogFind! (Web Clásica)"
+
+#: shell/netzac/bookmarks.cpp
+msgid "FrogFind! Search"
+msgstr "Búsqueda FrogFind!"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Full Screen"
+msgstr "Pantalla completa"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Git"
+msgstr "Git"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Git (Ctrl+4)"
+msgstr "Git (Ctrl+4)"
+
+#: shell/netzac/dialogs.cpp
+msgid "Git URL (e.g. https://github.com):"
+msgstr "URL de Git (ej. https://github.com):"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Go"
+msgstr "Ir"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Go back one page (hold for history)"
+msgstr "Retroceder una página (mantener para historial)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Go forward one page (hold for history)"
+msgstr "Avanzar una página (mantener para historial)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Go to Home page"
+msgstr "Ir a la página de inicio"
+
+#: shell/netzac/preferences.cpp
+msgid "Google"
+msgstr "Google"
+
+#: shell/netzac/dialogs.cpp
+msgid "Guide"
+msgstr "Guía"
+
+#: shell/netzac/dialogs.cpp
+msgid "HTML Bookmarks (*.html *.htm);;All Files (*)"
+msgstr "Marcadores HTML (*.html *.htm);;Todos los archivos (*)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "HTML Files (*.html *.htm);;All Files (*)"
+msgstr "Archivos HTML (*.html *.htm);;Todos los archivos (*)"
+
+#: shell/netzac/dialogs.cpp
+msgid "HTTP Proxy"
+msgstr "Proxy HTTP"
+
+#: shell/netzac/dialogs.cpp
+msgid "HTTP User-Agent String:"
+msgstr "Cadena User-Agent HTTP:"
+
+#: shell/netzac/dialogs.cpp
+msgid "HTTP cache cleared."
+msgstr "Caché HTTP borrada."
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Help"
+msgstr "Ayuda"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Help Contents"
+msgstr "Contenido de la ayuda"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "History"
+msgstr "Historial"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "History..."
+msgstr "Historial..."
+
+#: shell/netzac/dialogs.cpp shell/netzac/netzacwindow.cpp shell/netzac/preferences.cpp
+msgid "Home"
+msgstr "Inicio"
+
+#: shell/netzac/dialogs.cpp
+msgid "Host:"
+msgstr "Servidor:"
+
+#: shell/netzac/dialogs.cpp
+msgid "Icon:"
+msgstr "Icono:"
+
+#: shell/netzac/dialogs.cpp
+msgid "Import Bookmarks"
+msgstr "Importar marcadores"
+
+#: shell/netzac/dialogs.cpp
+msgid "Import Bookmarks (Chrome / Firefox)"
+msgstr "Importar marcadores (Chrome / Firefox)"
+
+#: shell/netzac/dialogs.cpp
+msgid "Import..."
+msgstr "Importar..."
+
+#: shell/netzac/dialogs.cpp
+msgid "Imported %1 new bookmark(s)."
+msgstr "Se importaron %1 marcador(es) nuevo(s)."
+
+#: shell/netzac/preferences.cpp
+msgid "Internet"
+msgstr "Internet"
+
+#: shell/netzac/preferences.cpp
+msgid "Internet Archive"
+msgstr "Internet Archive"
+
+#: shell/netzac/dialogs.cpp
+msgid "JavaScript & Page Detection:"
+msgstr "Detección de JavaScript y página:"
+
+#: shell/netzac/dialogs.cpp
+msgid "Keep cookies only until Netzac closes"
+msgstr "Conservar cookies solo hasta cerrar Netzac"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Keyboard Shortcuts &amp; Toolbar Guide"
+msgstr "Guía de atajos de teclado y barras"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Loading: %1%"
+msgstr "Cargando: %1%"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Location Toolbar"
+msgstr "Barra de direcciones"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Location:"
+msgstr "Ubicación:"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Mail"
+msgstr "Correo"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Mail (Ctrl+2)"
+msgstr "Correo (Ctrl+2)"
+
+#: shell/netzac/dialogs.cpp
+msgid "Mail URL (e.g. https://mail.google.com):"
+msgstr "URL de correo (ej. https://mail.google.com):"
+
+#: shell/netzac/dialogs.cpp
+msgid "Manual proxy configuration"
+msgstr "Configuración manual de proxy"
+
+#: shell/netzac/dialogs.cpp
+msgid "Maximum Cache Size (MB):"
+msgstr "Tamaño máximo de caché (MB):"
+
+#: shell/netzac/dialogs.cpp
+msgid "Maximum image width (px):"
+msgstr "Ancho máximo de imagen (px):"
+
+#: shell/netzac/dialogs.cpp
+msgid "Memory Cache"
+msgstr "Caché en memoria"
+
+#: shell/netzac/preferences.cpp
+msgid "NPR Text"
+msgstr "NPR Text"
+
+#: shell/netzac/bookmarks.cpp
+msgid "NPR Text Only"
+msgstr "NPR Solo Texto"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Navigation Toolbar"
+msgstr "Barra de navegación"
+
+#: shell/netzac/dialogs.cpp shell/netzac/netzacwindow.cpp
+msgid "Navigator"
+msgstr "Navigator"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Navigator (Ctrl+1)"
+msgstr "Navigator (Ctrl+1)"
+
+#: shell/netzac/dialogs.cpp
+msgid "Navigator Home Page Location:"
+msgstr "Dirección de la página de inicio:"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Netsite:"
+msgstr "Netsite:"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Netzac"
+msgstr "Netzac"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Netzac - Chat"
+msgstr "Netzac - Chat"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Netzac - Git"
+msgstr "Netzac - Git"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Netzac - Mail"
+msgstr "Netzac - Mail"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Netzac Navigator 1.0 &mdash; ZacOS 9 Platinum Edition"
+msgstr "Netzac Navigator 1.0 &mdash; Edición Platinum ZacOS 9"
+
+#: shell/netzac/widgets.cpp
+msgid "Netzac Home"
+msgstr "Inicio de Netzac"
+
+#: shell/netzac/dialogs.cpp shell/netzac/preferences.cpp
+msgid "Netzac Navigator"
+msgstr "Netzac Navigator"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Netzac Navigator Help"
+msgstr "Ayuda de Netzac Navigator"
+
+#: shell/netzac/dialogs.cpp
+msgid "Netzac is currently your default browser."
+msgstr "Netzac es actualmente su navegador predeterminado."
+
+#: shell/netzac/dialogs.cpp
+msgid "Netzac is not your default browser."
+msgstr "Netzac no es su navegador predeterminado."
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Netzac set as default browser"
+msgstr "Netzac establecido como navegador predeterminado"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Netzac: %1"
+msgstr "Netzac: %1"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "New Navigator Window"
+msgstr "Nueva ventana de Navigator"
+
+#: shell/netzac/netzacwindow.cpp shell/netzac/widgets.cpp
+msgid "New Tab"
+msgstr "Nueva pestaña"
+
+#: shell/netzac/widgets.cpp
+msgid "New Tab (Ctrl+T)"
+msgstr "Nueva pestaña (Ctrl+T)"
+
+#: shell/netzac/dialogs.cpp
+msgid "No bookmarks could be imported from the selected file."
+msgstr "No se pudieron importar marcadores del archivo seleccionado."
+
+#: shell/netzac/dialogs.cpp
+msgid "Normalize tables"
+msgstr "Normalizar tablas"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Not Now"
+msgstr "Ahora no"
+
+#: shell/netzac/dialogs.cpp shell/netzac/netzacwindow.cpp
+msgid "OK"
+msgstr "OK"
+
+#: shell/netzac/dialogs.cpp shell/netzac/netzacwindow.cpp
+msgid "Open"
+msgstr "Abrir"
+
+#: shell/netzac/dialogs.cpp
+msgid "Open Home Page"
+msgstr "Abrir página de inicio"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Open Link in New Tab"
+msgstr "Abrir enlace en una pestaña nueva"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Open Link in New Window"
+msgstr "Abrir enlace en una ventana nueva"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Open Local HTML File"
+msgstr "Abrir archivo HTML local"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Open New Links in New Windows"
+msgstr "Abrir enlaces nuevos en ventanas nuevas"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Open New Links in Tabs"
+msgstr "Abrir enlaces nuevos en pestañas"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Open Page"
+msgstr "Abrir página"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Open Page..."
+msgstr "Abrir página..."
+
+#: shell/netzac/netzacwindow.cpp
+msgid "PDF Files (*.pdf)"
+msgstr "Archivos PDF (*.pdf)"
+
+#: shell/netzac/dialogs.cpp
+msgid "Page"
+msgstr "Página"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Page & Security Info"
+msgstr "Información de página y seguridad"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Page Info"
+msgstr "Información de la página"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Page Source"
+msgstr "Código fuente de la página"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Paste"
+msgstr "Pegar"
+
+#: shell/netzac/dialogs.cpp shell/netzac/netzacwindow.cpp
+msgid "Personal Toolbar"
+msgstr "Barra personal"
+
+#: shell/netzac/dialogs.cpp
+msgid "Port:"
+msgstr "Puerto:"
+
+#: shell/netzac/dialogs.cpp
+msgid "Preferences"
+msgstr "Preferencias"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Preferences..."
+msgstr "Preferencias..."
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Print"
+msgstr "Imprimir"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Print Page to PDF"
+msgstr "Imprimir página a PDF"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Print this page"
+msgstr "Imprimir esta página"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Print..."
+msgstr "Imprimir..."
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Printed PDF: %1"
+msgstr "PDF guardado: %1"
+
+#: shell/netzac/dialogs.cpp
+msgid "Proxies"
+msgstr "Proxies"
+
+#: shell/netzac/dialogs.cpp
+msgid "Proxy Type:"
+msgstr "Tipo de proxy:"
+
+#: shell/netzac/dialogs.cpp
+msgid "Quick Links"
+msgstr "Enlaces rápidos"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Quit"
+msgstr "Salir"
+
+#: shell/netzac/dialogs.cpp
+msgid "Reading Layout:"
+msgstr "Diseño de lectura:"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Reload"
+msgstr "Recargar"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Reload current page"
+msgstr "Recargar página actual"
+
+#: shell/netzac/dialogs.cpp
+msgid "Remove"
+msgstr "Eliminar"
+
+#: shell/netzac/dialogs.cpp
+msgid "Remove <iframe> embeds"
+msgstr "Eliminar marcos <iframe>"
+
+#: shell/netzac/dialogs.cpp
+msgid "Remove <script> tags"
+msgstr "Eliminar etiquetas <script>"
+
+#: shell/netzac/dialogs.cpp
+msgid "Remove <video> elements"
+msgstr "Eliminar elementos <video>"
+
+#: shell/netzac/dialogs.cpp
+msgid "Remove ads, popups and hidden noise"
+msgstr "Eliminar anuncios, ventanas emergentes y ruido oculto"
+
+#: shell/netzac/dialogs.cpp
+msgid "Reset"
+msgstr "Restablecer"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Reset Zoom"
+msgstr "Restablecer zoom"
+
+#: shell/netzac/dialogs.cpp
+msgid "Reset to Chrome (Linux)"
+msgstr "Restablecer a Chrome (Linux)"
+
+#: shell/netzac/dialogs.cpp
+msgid "SOCKS5 Proxy"
+msgstr "Proxy SOCKS5"
+
+#: shell/netzac/preferences.cpp
+msgid "Safari (macOS)"
+msgstr "Safari (macOS)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Save As..."
+msgstr "Guardar como..."
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Save Error"
+msgstr "Error al guardar"
+
+#: shell/netzac/main.cpp
+msgid "Save File"
+msgstr "Guardar archivo"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Save Image As..."
+msgstr "Guardar imagen como..."
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Save Page As"
+msgstr "Guardar página como"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Saved: %1"
+msgstr "Guardado: %1"
+
+#: shell/netzac/dialogs.cpp
+msgid "Search"
+msgstr "Buscar"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Search:"
+msgstr "Buscar:"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Security Info"
+msgstr "Información de seguridad"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Select All"
+msgstr "Seleccionar todo"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Set as Default"
+msgstr "Establecer como predeterminado"
+
+#: shell/netzac/dialogs.cpp
+msgid "Set as Default Browser"
+msgstr "Establecer como navegador predeterminado"
+
+#: shell/netzac/widgets.cpp
+msgid "Show location history"
+msgstr "Mostrar historial de direcciones"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Show/Hide"
+msgstr "Mostrar/Ocultar"
+
+#: shell/netzac/dialogs.cpp
+msgid "Site Title:"
+msgstr "Título del sitio:"
+
+#: shell/netzac/dialogs.cpp
+msgid "Sites inside folder:"
+msgstr "Sitios dentro de la carpeta:"
+
+#: shell/netzac/dialogs.cpp
+msgid "Skip interactive JS web apps only (Recommended)"
+msgstr "Omitir solo aplicaciones web JS interactivas (Recomendado)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Source of: %1"
+msgstr "Código fuente de: %1"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Status Bar"
+msgstr "Barra de estado"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Stop"
+msgstr "Detener"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Stop loading"
+msgstr "Detener carga"
+
+#: shell/netzac/dialogs.cpp
+msgid "Strict: skip any page with <script> tags"
+msgstr "Estricto: omitir cualquier página con etiquetas <script>"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Tabs & Links"
+msgstr "Pestañas y enlaces"
+
+#: shell/netzac/dialogs.cpp
+msgid "Target URL:"
+msgstr "URL de destino:"
+
+#: shell/netzac/bookmarks.cpp shell/netzac/preferences.cpp
+msgid "The Old Net"
+msgstr "The Old Net"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Toggle Calm reading mode (configure filters in Edit > Preferences > Calm Mode)"
+msgstr "Alternar Modo Calma (configurar filtros en Editar > Preferencias > Modo Calma)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Top Tabs (Below Personal Toolbar)"
+msgstr "Pestañas arriba (debajo de la Barra Personal)"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Transfer interrupted"
+msgstr "Transferencia interrumpida"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Type the Internet location (URL) or choose a local file:"
+msgstr "Escriba la dirección de Internet (URL) o elija un archivo local:"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Undo"
+msgstr "Deshacer"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Unencrypted connection (HTTP) — Information sent over this connection is not encrypted."
+msgstr "Conexión sin cifrar (HTTP) — La información enviada por esta conexión no está cifrada."
+
+#: shell/netzac/widgets.cpp
+msgid "Untitled"
+msgstr "Sin título"
+
+#: shell/netzac/dialogs.cpp
+msgid "Up"
+msgstr "Subir"
+
+#: shell/netzac/dialogs.cpp
+msgid "Use Current Page"
+msgstr "Usar página actual"
+
+#: shell/netzac/dialogs.cpp
+msgid "Use system proxy settings"
+msgstr "Usar configuración de proxy del sistema"
+
+#: shell/netzac/dialogs.cpp
+msgid "User Agent"
+msgstr "Agente de usuario"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "View"
+msgstr "Ver"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "View Image"
+msgstr "Ver imagen"
+
+#: shell/netzac/bookmarks.cpp
+msgid "Welcome to Netzac"
+msgstr "Bienvenido a Netzac"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Welcome to Netzac Navigator 1.0"
+msgstr "Bienvenido a Netzac Navigator 1.0"
+
+#: shell/netzac/dialogs.cpp
+msgid "When Netzac Starts:"
+msgstr "Al iniciar Netzac:"
+
+#: shell/netzac/preferences.cpp
+msgid "Wiby"
+msgstr "Wiby"
+
+#: shell/netzac/preferences.cpp
+msgid "Wiby (Old Web)"
+msgstr "Wiby (Web Antigua)"
+
+#: shell/netzac/bookmarks.cpp
+msgid "Wiby - Old Web Search"
+msgstr "Wiby - Búsqueda en la Web Antigua"
+
+#: shell/netzac/preferences.cpp
+msgid "Wikipedia"
+msgstr "Wikipedia"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Zoom"
+msgstr "Zoom"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Zoom In"
+msgstr "Acercar"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Zoom Out"
+msgstr "Alejar"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Zoom: %1%"
+msgstr "Zoom: %1%"
+
+#: shell/netzac/netzacwindow.cpp
+msgid "Zoom: 100%"
+msgstr "Zoom: 100%"
+
+msgid "Navigation Button Labels"
+msgstr "Etiquetas de los botones de navegación"
+
+msgid "Enable JavaScript"
+msgstr "Habilitar JavaScript"
+
+msgid "Remember passwords (ZacOS Keychain)"
+msgstr "Recordar contraseñas (Llavero de ZacOS)"
+
+msgid "Reset All Settings..."
+msgstr "Restablecer todo..."
+
+msgid "Reset All Settings"
+msgstr "Restablecer todo"
+
+msgid "This will reset all preferences, bookmarks, history, Personal Toolbar, and saved Netzac passwords back to their defaults.\n\nDo you want to continue?"
+msgstr "Esto restablecerá todas las preferencias, marcadores, historial, barra personal y contraseñas guardadas de Netzac a sus valores predeterminados.\n\n¿Desea continuar?"
+
+msgid "Reset Everything"
+msgstr "Restablecer todo"
+
+msgid "Save Password"
+msgstr "Guardar contraseña"
+
+msgid "Do you want Netzac to save the password for \"%1\" on %2 in ZacOS Keychain?"
+msgstr "¿Deseas que Netzac guarde la contraseña de \"%1\" en %2 en el Llavero de ZacOS?"
+
+msgid "Saved password for %1 in ZacOS Keychain"
+msgstr "Contraseña guardada para %1 en el Llavero de ZacOS"
+
+msgid "Netzac Navigator (ZacOS 9)\n\nDeveloped by Lucas Guimarães - G3Pix (@guimaraeslucas). We count on the support of the ZacOS 9 community for contributions at:\n%1\n\nSpecial thanks to Adam Lawson (@chromasystemprofessional) for creating the incredible ZacOS 9 project."
+msgstr "Netzac Navigator (ZacOS 9)\n\nDesarrollado por Lucas Guimarães - G3Pix (@guimaraeslucas). Contamos con el apoyo de la comunidad ZacOS 9 para contribuciones en:\n%1\n\nAgradecimientos especiales a Adam Lawson (@chromasystemprofessional) por crear el increíble proyecto ZacOS 9."
+
+#: shell/netzac/dialogs.cpp
+msgid "Ad Blocker"
+msgstr "Bloqueador de anuncios"
+
+#: shell/netzac/dialogs.cpp
+msgid "Enable the Netzac Ad Blocker"
+msgstr "Activar el bloqueador de anuncios de Netzac"
+
+#: shell/netzac/dialogs.cpp
+msgid "Netzac blocks advertisements, trackers and malicious addresses using filter lists such as EasyList. Lists are downloaded from the addresses below and stored locally on this computer."
+msgstr "Netzac bloquea anuncios, rastreadores y direcciones maliciosas mediante listas de filtros como EasyList. Las listas se descargan de las direcciones siguientes y se guardan localmente en este equipo."
+
+#: shell/netzac/dialogs.cpp
+msgid "Filter list addresses:"
+msgstr "Direcciones de las listas de filtros:"
+
+#: shell/netzac/dialogs.cpp
+msgid "Add List..."
+msgstr "Añadir lista..."
+
+#: shell/netzac/dialogs.cpp
+msgid "Remove List"
+msgstr "Quitar lista"
+
+#: shell/netzac/dialogs.cpp
+msgid "Restore Default Lists"
+msgstr "Restaurar listas predeterminadas"
+
+#: shell/netzac/dialogs.cpp
+msgid "Update Filter Lists Now"
+msgstr "Actualizar las listas de filtros ahora"
+
+#: shell/netzac/dialogs.cpp
+msgid "Add Filter List"
+msgstr "Añadir lista de filtros"
+
+#: shell/netzac/dialogs.cpp
+msgid "Filter list address (URL):"
+msgstr "Dirección de la lista de filtros (URL):"
+
+#: shell/netzac/dialogs.cpp
+msgid "The address must be a valid http:// or https:// URL."
+msgstr "La dirección debe ser una URL http:// o https:// válida."
+
+#: shell/netzac/dialogs.cpp
+msgid "Ad Blocker is disabled."
+msgstr "El bloqueador de anuncios está desactivado."
+
+#: shell/netzac/dialogs.cpp
+msgid "Updating filter lists..."
+msgstr "Actualizando las listas de filtros..."
+
+#: shell/netzac/dialogs.cpp
+msgid "Update failed: %1"
+msgstr "Error al actualizar: %1"
+
+#: shell/netzac/dialogs.cpp
+msgid "No filter lists loaded yet."
+msgstr "Todavía no se ha cargado ninguna lista de filtros."
+
+#: shell/netzac/dialogs.cpp
+msgid "%1 rules loaded. Last update: %2"
+msgstr "%1 reglas cargadas. Última actualización: %2"
+
+#: shell/netzac/dialogs.cpp
+msgid "Never"
+msgstr "Nunca"

@@ -1,0 +1,25 @@
+[Desktop Entry]
+Type=Application
+Name=Netzac
+Name[ar]=Netzac
+Name[fr_CA]=Netzac
+Name[fr_FR]=Netzac
+Name[pt]=Netzac
+Name[es]=Netzac
+Name[ru]=Netzac
+Name[ja]=Netzac
+Name[it]=Netzac
+Comment=Browse the World Wide Web in classic Platinum style
+Comment[ar]=تصفح الويب بأسلوب Platinum الكلاسيكي
+Comment[fr_CA]=Naviguer sur le Web dans le style Platinum classique
+Comment[fr_FR]=Naviguer sur le Web dans le style Platinum classique
+Comment[pt]=Navegue pela Web no estilo clássico Platinum
+Comment[es]=Navega por la Web al estilo clásico Platinum
+Comment[ru]=Просмотр веб-страниц в классическом стиле Platinum
+Comment[ja]=クラシックな Platinum スタイルで Web を閲覧します
+Comment[it]=Naviga sul Web nel classico stile Platinum
+Exec=zacos9-netzac %u
+Icon=netzac
+Terminal=false
+Categories=Network;WebBrowser;
+MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/about;
